@@ -1,2067 +1,1883 @@
-// ======================================================
-// NAYAKHAP AGRO RESEARCH
-// SUPABASE CLOUD + ANIMATED DASHBOARD
-// ======================================================
+/* =====================================================
+   NAYAKHAP AGRO RESEARCH
+   MODERN UI
+===================================================== */
 
-const SUPABASE_URL =
-  "https://cuhffitgrgewewoqdhgn.supabase.co";
-
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_d9g-n2-Q3jEpW447fT-hXA_RW29I84n";
-
-const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
-
-// ======================================================
-// GLOBAL DATA
-// ======================================================
-
-let currentUser = null;
-
-let fields = [];
-let farmers = [];
-let observations = [];
-let diaryEntries = [];
-
-// ======================================================
-// DOM READY
-// ======================================================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  setupNavigation();
-  setupAuth();
-  setupForms();
-  setupSearch();
-  setupAnimations();
-  setupBackup();
-
-  await checkAuth();
-});
-
-// ======================================================
-// AUTHENTICATION
-// ======================================================
-
-function setupAuth() {
-  const loginTab = document.getElementById("loginTab");
-  const signupTab = document.getElementById("signupTab");
-  const authForm = document.getElementById("authForm");
-
-  if (!loginTab || !signupTab || !authForm) return;
-
-  loginTab.addEventListener("click", () => {
-    loginTab.classList.add("active");
-    signupTab.classList.remove("active");
-
-    document.getElementById("authSubmit").textContent = "Login";
-
-    const wrap = document.getElementById("confirmPasswordWrap");
-    const confirm = document.getElementById("authConfirmPassword");
-
-    if (wrap) wrap.style.display = "none";
-    if (confirm) confirm.required = false;
-
-    clearAuthMessage();
-  });
-
-  signupTab.addEventListener("click", () => {
-    signupTab.classList.add("active");
-    loginTab.classList.remove("active");
-
-    document.getElementById("authSubmit").textContent =
-      "Create Account";
-
-    const wrap = document.getElementById("confirmPasswordWrap");
-    const confirm = document.getElementById("authConfirmPassword");
-
-    if (wrap) wrap.style.display = "block";
-    if (confirm) confirm.required = true;
-
-    clearAuthMessage();
-  });
-
-  authForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const isSignup =
-      signupTab.classList.contains("active");
-
-    const email =
-      document.getElementById("authEmail").value.trim();
-
-    const password =
-      document.getElementById("authPassword").value;
-
-    const confirmPassword =
-      document.getElementById("authConfirmPassword").value;
-
-    if (!email || !password) {
-      showAuthMessage(
-        "Please enter email and password.",
-        "error"
-      );
-      return;
-    }
-
-    if (isSignup) {
-      if (password !== confirmPassword) {
-        showAuthMessage(
-          "Passwords do not match.",
-          "error"
-        );
-        return;
-      }
-
-      if (password.length < 6) {
-        showAuthMessage(
-          "Password must contain at least 6 characters.",
-          "error"
-        );
-        return;
-      }
-
-      await signupUser(email, password);
-    } else {
-      await loginUser(email, password);
-    }
-  });
-
-  const logoutBtn =
-    document.getElementById("logoutBtn");
-
-  logoutBtn?.addEventListener(
-    "click",
-    logoutUser
-  );
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-// ======================================================
-// SIGN UP
-// ======================================================
+:root {
 
-async function signupUser(email, password) {
-  setAuthLoading(true);
+    --green: #247a43;
+    --green-dark: #185b31;
+    --green-light: #e9f6ed;
+    --green-soft: #f2faf4;
 
-  const { data, error } =
-    await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo:
-          "https://sumit2728.github.io/nayakhap-agro-research/"
-      }
-    });
+    --background: #f5f7f5;
+    --card: #ffffff;
 
-  setAuthLoading(false);
+    --text: #17231a;
+    --muted: #708074;
 
-  if (error) {
-    showAuthMessage(
-      error.message,
-      "error"
-    );
-    return;
-  }
+    --border: #e3e9e4;
 
-  if (data.session) {
-    showAuthMessage(
-      "Account created successfully.",
-      "success"
-    );
+    --danger: #c0392b;
 
-    currentUser = data.user;
+    --shadow:
+        0 10px 30px rgba(24, 91, 49, 0.06);
 
-    await showApp();
-  } else {
-    showAuthMessage(
-      "Account created. Please check your email and confirm your account before logging in.",
-      "success"
-    );
-  }
+    --shadow-hover:
+        0 18px 45px rgba(24, 91, 49, 0.12);
 }
-
-// ======================================================
-// LOGIN
-// ======================================================
-
-async function loginUser(email, password) {
-  setAuthLoading(true);
-
-  const { data, error } =
-    await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-  setAuthLoading(false);
-
-  if (error) {
-    showAuthMessage(
-      error.message,
-      "error"
-    );
-    return;
-  }
-
-  currentUser = data.user;
-
-  await showApp();
-}
-
-// ======================================================
-// LOGOUT
-// ======================================================
-
-async function logoutUser() {
-  const { error } =
-    await supabaseClient.auth.signOut();
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  currentUser = null;
-
-  fields = [];
-  farmers = [];
-  observations = [];
-  diaryEntries = [];
-
-  const appShell =
-    document.getElementById("appShell");
-
-  const authScreen =
-    document.getElementById("authScreen");
-
-  if (appShell)
-    appShell.style.display = "none";
-
-  if (authScreen)
-    authScreen.style.display = "flex";
-}
-
-// ======================================================
-// CHECK SESSION
-// ======================================================
-
-async function checkAuth() {
-  const { data } =
-    await supabaseClient.auth.getSession();
-
-  if (data.session) {
-    currentUser = data.session.user;
-    await showApp();
-  } else {
-    document.getElementById(
-      "authScreen"
-    ).style.display = "flex";
-
-    document.getElementById(
-      "appShell"
-    ).style.display = "none";
-  }
-
-  supabaseClient.auth.onAuthStateChange(
-    async (_event, session) => {
-      if (session) {
-        currentUser = session.user;
-      }
-    }
-  );
-}
-
-// ======================================================
-// SHOW APP
-// ======================================================
-
-async function showApp() {
-  document.getElementById(
-    "authScreen"
-  ).style.display = "none";
-
-  document.getElementById(
-    "appShell"
-  ).style.display = "flex";
-
-  const userEmail =
-    document.getElementById("userEmail");
-
-  if (userEmail) {
-    userEmail.textContent =
-      currentUser?.email || "";
-  }
-
-  await loadAllData();
-
-  updateDashboard();
-
-  animateDashboard();
-}
-
-// ======================================================
-// LOAD CLOUD DATA
-// ======================================================
-
-async function loadAllData() {
-  if (!currentUser) return;
-
-  const [
-    fieldsResponse,
-    farmersResponse,
-    observationsResponse,
-    diaryResponse
-  ] = await Promise.all([
-    supabaseClient
-      .from("fields")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", {
-        ascending: false
-      }),
-
-    supabaseClient
-      .from("farmers")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", {
-        ascending: false
-      }),
-
-    supabaseClient
-      .from("crop_observations")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", {
-        ascending: false
-      }),
-
-    supabaseClient
-      .from("field_diary")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .order("created_at", {
-        ascending: false
-      })
-  ]);
-
-  if (fieldsResponse.error)
-    console.error(
-      "Fields:",
-      fieldsResponse.error
-    );
-
-  if (farmersResponse.error)
-    console.error(
-      "Farmers:",
-      farmersResponse.error
-    );
-
-  if (observationsResponse.error)
-    console.error(
-      "Observations:",
-      observationsResponse.error
-    );
-
-  if (diaryResponse.error)
-    console.error(
-      "Diary:",
-      diaryResponse.error
-    );
-
-  fields =
-    fieldsResponse.data || [];
-
-  farmers =
-    farmersResponse.data || [];
-
-  observations =
-    observationsResponse.data || [];
-
-  diaryEntries =
-    diaryResponse.data || [];
-
-  renderAll();
-}
-
-// ======================================================
-// NAVIGATION
-// ======================================================
-
-function setupNavigation() {
-  const buttons =
-    document.querySelectorAll(".nav-btn");
-
-  buttons.forEach(button => {
-    button.addEventListener(
-      "click",
-      () => {
-        const page =
-          button.dataset.page;
-
-        showPage(page);
-      }
-    );
-  });
-
-  document
-    .getElementById("mobileMenu")
-    ?.addEventListener(
-      "click",
-      () => {
-        document
-          .querySelector(".sidebar")
-          ?.classList
-          .toggle("open");
-      }
-    );
-}
-
-function showPage(page) {
-  document
-    .querySelectorAll(".page")
-    .forEach(section => {
-      section.classList.remove("active");
-    });
-
-  const target =
-    document.getElementById(page);
-
-  if (target) {
-    target.classList.add("active");
-  }
-
-  document
-    .querySelectorAll(".nav-btn")
-    .forEach(button => {
-      button.classList.toggle(
-        "active",
-        button.dataset.page === page
-      );
-    });
-
-  const titles = {
-    dashboard:
-      "Research Dashboard",
-    fields:
-      "Field Records",
-    farmers:
-      "Farmer Records",
-    health:
-      "Crop Health",
-    diary:
-      "Field Diary",
-    backup:
-      "Backup & Data"
-  };
-
-  const pageTitle =
-    document.getElementById("pageTitle");
-
-  if (pageTitle) {
-    pageTitle.textContent =
-      titles[page] ||
-      "Research Dashboard";
-  }
-
-  document
-    .querySelector(".sidebar")
-    ?.classList
-    .remove("open");
-
-  if (page === "dashboard") {
-    animateDashboard();
-  }
-}
-
-// ======================================================
-// FORMS
-// ======================================================
-
-function setupForms() {
-  document
-    .getElementById("fieldForm")
-    ?.addEventListener(
-      "submit",
-      saveField
-    );
-
-  document
-    .getElementById("farmerForm")
-    ?.addEventListener(
-      "submit",
-      saveFarmer
-    );
-
-  document
-    .getElementById("healthForm")
-    ?.addEventListener(
-      "submit",
-      saveHealthObservation
-    );
-
-  document
-    .getElementById("diaryForm")
-    ?.addEventListener(
-      "submit",
-      saveDiaryEntry
-    );
-
-  const healthDate =
-    document.getElementById(
-      "healthDate"
-    );
-
-  const diaryDate =
-    document.getElementById(
-      "diaryDate"
-    );
-
-  if (healthDate)
-    healthDate.value = today();
-
-  if (diaryDate)
-    diaryDate.value = today();
-}
-
-// ======================================================
-// SAVE FIELD
-// ======================================================
-
-async function saveField(event) {
-  event.preventDefault();
-
-  if (!currentUser) {
-    alert("Please login first.");
-    return;
-  }
-
-  const record = {
-    field_name:
-      document
-        .getElementById("fieldId")
-        .value
-        .trim(),
-
-    crop:
-      document
-        .getElementById("fieldCrop")
-        .value
-        .trim(),
-
-    variety:
-      document
-        .getElementById("fieldVariety")
-        .value
-        .trim(),
-
-    sowing_date:
-      document.getElementById(
-        "fieldDate"
-      ).value || null,
-
-    irrigation_source:
-      document.getElementById(
-        "fieldWater"
-      ).value,
-
-    area:
-      parseNumber(
-        document.getElementById(
-          "fieldSize"
-        ).value
-      ),
-
-    fertilizer:
-      document
-        .getElementById("fieldFertilizer")
-        .value
-        .trim(),
-
-    yield_value:
-      parseNumber(
-        document.getElementById(
-          "fieldYield"
-        ).value
-      ),
-
-    notes:
-      document
-        .getElementById("fieldNotes")
-        .value
-        .trim(),
-
-    user_id:
-      currentUser.id
-  };
-
-  const { error } =
-    await supabaseClient
-      .from("fields")
-      .insert(record);
-
-  if (error) {
-    alert(
-      "Could not save field:\n" +
-      error.message
-    );
-    return;
-  }
-
-  closeModal("fieldModal");
-
-  event.target.reset();
-
-  await loadAllData();
-
-  showToast(
-    "🌱 Field record saved successfully!"
-  );
-}
-
-// ======================================================
-// SAVE FARMER
-// ======================================================
-
-async function saveFarmer(event) {
-  event.preventDefault();
-
-  if (!currentUser) return;
-
-  const record = {
-    farmer_code:
-      document
-        .getElementById("farmerCode")
-        .value
-        .trim(),
-
-    main_crop:
-      document
-        .getElementById("farmerCrop")
-        .value
-        .trim(),
-
-    seed_source:
-      document
-        .getElementById("seedSource")
-        .value
-        .trim(),
-
-    farming_method:
-      document
-        .getElementById("farmerWater")
-        .value,
-
-    notes: [
-      document
-        .getElementById("farmerProblem")
-        .value
-        .trim(),
-
-      document
-        .getElementById(
-          "farmerObservation"
-        )
-        .value
-        .trim()
-    ]
-      .filter(Boolean)
-      .join(" | "),
-
-    user_id:
-      currentUser.id
-  };
-
-  const { error } =
-    await supabaseClient
-      .from("farmers")
-      .insert(record);
-
-  if (error) {
-    alert(
-      "Could not save farmer:\n" +
-      error.message
-    );
-    return;
-  }
-
-  closeModal("farmerModal");
-
-  event.target.reset();
-
-  await loadAllData();
-
-  showToast(
-    "👨‍🌾 Farmer record saved!"
-  );
-}
-
-// ======================================================
-// SAVE HEALTH
-// ======================================================
-
-async function saveHealthObservation(event) {
-  event.preventDefault();
-
-  if (!currentUser) return;
-
-  const record = {
-    observation_date:
-      document.getElementById(
-        "healthDate"
-      ).value,
-
-    field_code:
-      document
-        .getElementById("healthField")
-        .value
-        .trim(),
-
-    crop_name:
-      document
-        .getElementById("healthCrop")
-        .value
-        .trim() ||
-      "Not specified",
-
-    disease_symptoms:
-      document
-        .getElementById(
-          "healthSymptoms"
-        )
-        .value
-        .trim(),
-
-    crop_stage:
-      document
-        .getElementById(
-          "healthIdentification"
-        )
-        .value
-        .trim(),
-
-    treatment:
-      document
-        .getElementById(
-          "healthTreatment"
-        )
-        .value
-        .trim(),
-
-    pest_observation:
-      document.getElementById(
-        "healthSeverity"
-      ).value,
-
-    user_id:
-      currentUser.id
-  };
-
-  const { error } =
-    await supabaseClient
-      .from("crop_observations")
-      .insert(record);
-
-  if (error) {
-    alert(
-      "Could not save observation:\n" +
-      error.message
-    );
-    return;
-  }
-
-  closeModal("healthModal");
-
-  event.target.reset();
-
-  document.getElementById(
-    "healthDate"
-  ).value = today();
-
-  await loadAllData();
-
-  showToast(
-    "🔬 Crop observation saved!"
-  );
-}
-
-// ======================================================
-// SAVE DIARY
-// ======================================================
-
-async function saveDiaryEntry(event) {
-  event.preventDefault();
-
-  if (!currentUser) return;
-
-  const record = {
-    entry_date:
-      document.getElementById(
-        "diaryDate"
-      ).value,
-
-    field_code:
-      document
-        .getElementById("diaryField")
-        .value
-        .trim(),
-
-    activity:
-      "Field observation",
-
-    observation:
-      document
-        .getElementById(
-          "diaryObservation"
-        )
-        .value
-        .trim(),
-
-    weather_condition:
-      document
-        .getElementById(
-          "diaryWeather"
-        )
-        .value
-        .trim(),
-
-    user_id:
-      currentUser.id
-  };
-
-  const { error } =
-    await supabaseClient
-      .from("field_diary")
-      .insert(record);
-
-  if (error) {
-    alert(
-      "Could not save diary entry:\n" +
-      error.message
-    );
-    return;
-  }
-
-  closeModal("diaryModal");
-
-  event.target.reset();
-
-  document.getElementById(
-    "diaryDate"
-  ).value = today();
-
-  await loadAllData();
-
-  showToast(
-    "📓 Field diary entry saved!"
-  );
-}
-
-// ======================================================
-// SEARCH
-// ======================================================
-
-function setupSearch() {
-  const search =
-    document.getElementById(
-      "fieldSearch"
-    );
-
-  search?.addEventListener(
-    "input",
-    renderFields
-  );
-}
-
-// ======================================================
-// RENDER ALL
-// ======================================================
-
-function renderAll() {
-  renderFields();
-  renderFarmers();
-  renderHealth();
-  renderDiary();
-  updateDashboard();
-}
-
-// ======================================================
-// FIELD TABLE
-// ======================================================
-
-function renderFields() {
-  const tbody =
-    document.getElementById(
-      "fieldTable"
-    );
-
-  if (!tbody) return;
-
-  const search =
-    (
-      document.getElementById(
-        "fieldSearch"
-      )?.value || ""
-    )
-      .toLowerCase();
-
-  const filtered =
-    fields.filter(field => {
-      const text = [
-        field.field_name,
-        field.crop,
-        field.variety
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return text.includes(search);
-    });
-
-  if (!filtered.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="empty">
-          🌱 No field records found.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML =
-    filtered
-      .map(field => `
-        <tr class="data-row">
-          <td>
-            <strong>
-              ${escapeHtml(
-                field.field_name || "-"
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHtml(
-              field.crop || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              field.variety || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              field.irrigation_source || "-"
-            )}
-          </td>
-
-          <td>
-            ${formatDate(
-              field.sowing_date
-            )}
-          </td>
-
-          <td>
-            <button
-              class="delete-btn"
-              onclick="deleteField('${field.id}')"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      `)
-      .join("");
-}
-
-// ======================================================
-// FARMERS
-// ======================================================
-
-function renderFarmers() {
-  const tbody =
-    document.getElementById(
-      "farmerTable"
-    );
-
-  if (!tbody) return;
-
-  if (!farmers.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" class="empty">
-          👨‍🌾 No farmer records found.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML =
-    farmers
-      .map(farmer => `
-        <tr class="data-row">
-
-          <td>
-            <strong>
-              ${escapeHtml(
-                farmer.farmer_code || "-"
-              )}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHtml(
-              farmer.main_crop || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              farmer.seed_source || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              farmer.farming_method || "-"
-            )}
-          </td>
-
-          <td>
-            <button
-              class="delete-btn"
-              onclick="deleteFarmer('${farmer.id}')"
-            >
-              Delete
-            </button>
-          </td>
-
-        </tr>
-      `)
-      .join("");
-}
-
-// ======================================================
-// HEALTH
-// ======================================================
-
-function renderHealth() {
-  const tbody =
-    document.getElementById(
-      "healthTable"
-    );
-
-  if (!tbody) return;
-
-  if (!observations.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="empty">
-          🔬 No crop-health observations yet.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML =
-    observations
-      .map(item => `
-        <tr class="data-row">
-
-          <td>
-            ${formatDate(
-              item.observation_date
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              item.field_code || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              item.crop_name || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              item.disease_symptoms || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              item.pest_observation || "-"
-            )}
-          </td>
-
-          <td>
-            ${escapeHtml(
-              item.crop_stage || "-"
-            )}
-          </td>
-
-          <td>
-            <button
-              class="delete-btn"
-              onclick="deleteObservation('${item.id}')"
-            >
-              Delete
-            </button>
-          </td>
-
-        </tr>
-      `)
-      .join("");
-}
-
-// ======================================================
-// DIARY
-// ======================================================
-
-function renderDiary() {
-  const container =
-    document.getElementById(
-      "diaryList"
-    );
-
-  if (!container) return;
-
-  if (!diaryEntries.length) {
-    container.innerHTML = `
-      <div class="empty">
-        📓 No diary entries yet.
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML =
-    diaryEntries
-      .map(entry => `
-        <div class="diary-card">
-
-          <div class="diary-date">
-            ${formatDate(
-              entry.entry_date
-            )}
-          </div>
-
-          <h3>
-            ${escapeHtml(
-              entry.field_code ||
-              "General Field Visit"
-            )}
-          </h3>
-
-          <p>
-            ${escapeHtml(
-              entry.observation || "-"
-            )}
-          </p>
-
-          ${
-            entry.weather_condition
-              ? `
-                <p style="margin-top:10px">
-                  <strong>
-                    Weather:
-                  </strong>
-                  ${escapeHtml(
-                    entry.weather_condition
-                  )}
-                </p>
-              `
-              : ""
-          }
-
-          <button
-            class="delete-btn"
-            style="margin-top:12px"
-            onclick="deleteDiary('${entry.id}')"
-          >
-            Delete
-          </button>
-
-        </div>
-      `)
-      .join("");
-}
-
-// ======================================================
-// DASHBOARD
-// ======================================================
-
-function updateDashboard() {
-  animateNumber(
-    "fieldCount",
-    fields.length
-  );
-
-  animateNumber(
-    "farmerCount",
-    farmers.length
-  );
-
-  animateNumber(
-    "healthCount",
-    observations.length
-  );
-
-  animateNumber(
-    "diaryCount",
-    diaryEntries.length
-  );
-
-  renderCropDistribution();
-  renderRecentActivity();
-}
-
-// ======================================================
-// CROP DISTRIBUTION
-// ======================================================
-
-function renderCropDistribution() {
-  const container =
-    document.getElementById(
-      "cropDistribution"
-    );
-
-  if (!container) return;
-
-  if (!fields.length) {
-    container.innerHTML = `
-      <div class="empty">
-        🌱 No field data yet.
-      </div>
-    `;
-    return;
-  }
-
-  const counts = {};
-
-  fields.forEach(field => {
-    const crop =
-      field.crop || "Unknown";
-
-    counts[crop] =
-      (counts[crop] || 0) + 1;
-  });
-
-  const total = fields.length;
-
-  container.innerHTML =
-    Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([crop, count]) => {
-        const percentage =
-          Math.round(
-            (count / total) * 100
-          );
-
-        return `
-          <div class="crop-stat">
-
-            <div class="crop-stat-top">
-
-              <span>
-                🌱
-                ${escapeHtml(crop)}
-              </span>
-
-              <strong>
-                ${count}
-              </strong>
-
-            </div>
-
-            <div class="crop-bar">
-
-              <div
-                class="crop-bar-fill"
-                style="width:${percentage}%"
-              ></div>
-
-            </div>
-
-            <small>
-              ${percentage}% of fields
-            </small>
-
-          </div>
-        `;
-      })
-      .join("");
-}
-
-// ======================================================
-// RECENT ACTIVITY
-// ======================================================
-
-function renderRecentActivity() {
-  const container =
-    document.getElementById(
-      "recentActivity"
-    );
-
-  if (!container) return;
-
-  const activities = [];
-
-  fields.slice(0, 4)
-    .forEach(item => {
-      activities.push({
-        date: item.created_at,
-        icon: "🌱",
-        text:
-          `Field added: ${
-            item.field_name || "-"
-          }`
-      });
-    });
-
-  observations.slice(0, 4)
-    .forEach(item => {
-      activities.push({
-        date: item.created_at,
-        icon: "🔬",
-        text:
-          `Crop observation: ${
-            item.crop_name || "-"
-          }`
-      });
-    });
-
-  diaryEntries.slice(0, 4)
-    .forEach(item => {
-      activities.push({
-        date: item.created_at,
-        icon: "📓",
-        text:
-          `Diary entry: ${
-            item.field_code ||
-            "Field visit"
-          }`
-      });
-    });
-
-  activities.sort(
-    (a, b) =>
-      new Date(b.date) -
-      new Date(a.date)
-  );
-
-  if (!activities.length) {
-    container.innerHTML = `
-      <div class="empty">
-        ✨ No activity yet.
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML =
-    activities
-      .slice(0, 6)
-      .map(item => `
-        <div class="activity-item">
-
-          <div class="activity-icon">
-            ${item.icon}
-          </div>
-
-          <div>
-
-            <strong>
-              ${escapeHtml(
-                item.text
-              )}
-            </strong>
-
-            <div class="activity-time">
-              ${formatDateTime(
-                item.date
-              )}
-            </div>
-
-          </div>
-
-        </div>
-      `)
-      .join("");
-}
-
-// ======================================================
-// DELETE FIELD
-// ======================================================
-
-async function deleteField(id) {
-  if (!confirm(
-    "Delete this field record?"
-  )) return;
-
-  const { error } =
-    await supabaseClient
-      .from("fields")
-      .delete()
-      .eq("id", id)
-      .eq(
-        "user_id",
-        currentUser.id
-      );
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  await loadAllData();
-
-  showToast(
-    "Field record deleted."
-  );
-}
-
-// ======================================================
-// DELETE FARMER
-// ======================================================
-
-async function deleteFarmer(id) {
-  if (!confirm(
-    "Delete this farmer record?"
-  )) return;
-
-  const { error } =
-    await supabaseClient
-      .from("farmers")
-      .delete()
-      .eq("id", id)
-      .eq(
-        "user_id",
-        currentUser.id
-      );
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  await loadAllData();
-
-  showToast(
-    "Farmer record deleted."
-  );
-}
-
-// ======================================================
-// DELETE OBSERVATION
-// ======================================================
-
-async function deleteObservation(id) {
-  if (!confirm(
-    "Delete this health observation?"
-  )) return;
-
-  const { error } =
-    await supabaseClient
-      .from("crop_observations")
-      .delete()
-      .eq("id", id)
-      .eq(
-        "user_id",
-        currentUser.id
-      );
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  await loadAllData();
-
-  showToast(
-    "Observation deleted."
-  );
-}
-
-// ======================================================
-// DELETE DIARY
-// ======================================================
-
-async function deleteDiary(id) {
-  if (!confirm(
-    "Delete this diary entry?"
-  )) return;
-
-  const { error } =
-    await supabaseClient
-      .from("field_diary")
-      .delete()
-      .eq("id", id)
-      .eq(
-        "user_id",
-        currentUser.id
-      );
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  await loadAllData();
-
-  showToast(
-    "Diary entry deleted."
-  );
-}
-
-// ======================================================
-// DELETE EVERYTHING
-// ======================================================
-
-async function deleteAllData() {
-  if (!currentUser) return;
-
-  const confirmed =
-    confirm(
-      "WARNING!\n\nThis will permanently delete ALL your research data.\n\nContinue?"
-    );
-
-  if (!confirmed) return;
-
-  const tables = [
-    "crop_observations",
-    "field_diary",
-    "research_samples",
-    "fields",
-    "farmers"
-  ];
-
-  for (const table of tables) {
-    const { error } =
-      await supabaseClient
-        .from(table)
-        .delete()
-        .eq(
-          "user_id",
-          currentUser.id
-        );
-
-    if (error) {
-      alert(
-        `Could not clear ${table}:\n${error.message}`
-      );
-      return;
-    }
-  }
-
-  await loadAllData();
-
-  showToast(
-    "All research data deleted."
-  );
-}
-
-// ======================================================
-// BACKUP EXPORT
-// ======================================================
-
-async function exportBackup() {
-  const backup = {
-    exported_at:
-      new Date().toISOString(),
-
-    user:
-      currentUser?.email || "",
-
-    fields,
-    farmers,
-    observations,
-    diaryEntries
-  };
-
-  const blob =
-    new Blob(
-      [
-        JSON.stringify(
-          backup,
-          null,
-          2
-        )
-      ],
-      {
-        type:
-          "application/json"
-      }
-    );
-
-  const url =
-    URL.createObjectURL(blob);
-
-  const a =
-    document.createElement("a");
-
-  a.href = url;
-
-  a.download =
-    `nayakhap-research-backup-${today()}.json`;
-
-  document.body.appendChild(a);
-
-  a.click();
-
-  a.remove();
-
-  URL.revokeObjectURL(url);
-
-  showToast(
-    "💾 Backup downloaded."
-  );
-}
-
-// ======================================================
-// BACKUP UI
-// ======================================================
-
-function setupBackup() {
-  const restoreInput =
-    document.getElementById(
-      "restoreInput"
-    );
-
-  restoreInput?.addEventListener(
-    "change",
-    restoreBackup
-  );
-}
-
-// ======================================================
-// RESTORE BACKUP
-// ======================================================
-
-async function restoreBackup(event) {
-  const file =
-    event.target.files[0];
-
-  if (!file) return;
-
-  try {
-    const text =
-      await file.text();
-
-    const backup =
-      JSON.parse(text);
-
-    if (
-      !backup ||
-      !backup.fields ||
-      !backup.farmers
-    ) {
-      throw new Error(
-        "Invalid backup"
-      );
-    }
-
-    alert(
-      "Backup file verified successfully.\n\nFor safety, automatic restore is disabled in this version. Your cloud data has NOT been changed."
-    );
-
-  } catch (error) {
-    alert(
-      "Invalid backup file."
-    );
-  }
-
-  event.target.value = "";
-}
-
-// ======================================================
-// MODALS
-// ======================================================
-
-function openModal(id) {
-  const modal =
-    document.getElementById(id);
-
-  if (!modal) return;
-
-  modal.classList.add("open");
-}
-
-function closeModal(id) {
-  const modal =
-    document.getElementById(id);
-
-  if (!modal) return;
-
-  modal.classList.remove("open");
-}
-
-// ======================================================
-// ANIMATIONS
-// ======================================================
-
-function setupAnimations() {
-  document
-    .querySelectorAll(
-      ".stat-card, .card, .table-card, .diary-card, .backup-card"
-    )
-    .forEach((element, index) => {
-      element.style.animationDelay =
-        `${index * 60}ms`;
-    });
-}
-
-function animateDashboard() {
-  setTimeout(() => {
-    document
-      .querySelectorAll(
-        ".stat-card"
-      )
-      .forEach((card, index) => {
-        card.classList.add(
-          "dashboard-animate"
-        );
-
-        card.style.animationDelay =
-          `${index * 100}ms`;
-      });
-  }, 50);
-}
-
-function animateNumber(
-  elementId,
-  target
-) {
-  const element =
-    document.getElementById(
-      elementId
-    );
-
-  if (!element) return;
-
-  const start = 0;
-
-  const duration = 700;
-
-  const startTime =
-    performance.now();
-
-  function update(time) {
-    const progress =
-      Math.min(
-        (time - startTime) /
-          duration,
-        1
-      );
-
-    const eased =
-      1 -
-      Math.pow(
-        1 - progress,
-        3
-      );
-
-    const value =
-      Math.floor(
-        start +
-        (target - start) *
-          eased
-      );
-
-    element.textContent =
-      value;
-
-    if (progress < 1) {
-      requestAnimationFrame(
-        update
-      );
-    }
-  }
-
-  requestAnimationFrame(update);
-}
-
-// ======================================================
-// TOAST
-// ======================================================
-
-function showToast(message) {
-  let toast =
-    document.getElementById(
-      "agroToast"
-    );
-
-  if (!toast) {
-    toast =
-      document.createElement(
-        "div"
-      );
-
-    toast.id =
-      "agroToast";
-
-    document.body.appendChild(
-      toast
-    );
-  }
-
-  toast.textContent =
-    message;
-
-  toast.classList.add(
-    "show"
-  );
-
-  clearTimeout(
-    toast._timer
-  );
-
-  toast._timer =
-    setTimeout(() => {
-      toast.classList.remove(
-        "show"
-      );
-    }, 2800);
-}
-
-// ======================================================
-// HELPERS
-// ======================================================
-
-function today() {
-  return new Date()
-    .toISOString()
-    .split("T")[0];
-}
-
-function parseNumber(value) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
-  }
-
-  const number =
-    Number(value);
-
-  return Number.isFinite(number)
-    ? number
-    : null;
-}
-
-function formatDate(value) {
-  if (!value) return "-";
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return value;
-  }
-
-  return date.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
-}
-
-function formatDateTime(value) {
-  if (!value) return "-";
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "-";
-  }
-
-  return date.toLocaleString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  );
-}
-
-function escapeHtml(value) {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-}
-
-// ======================================================
-// AUTH UI
-// ======================================================
-
-function setAuthLoading(
-  loading
-) {
-  const button =
-    document.getElementById(
-      "authSubmit"
-    );
-
-  if (!button) return;
-
-  if (loading) {
-    button.disabled = true;
-
-    button.textContent =
-      "Please wait...";
-  } else {
-    button.disabled = false;
-
-    const signup =
-      document
-        .getElementById(
-          "signupTab"
-        )
-        ?.classList
-        .contains("active");
-
-    button.textContent =
-      signup
-        ? "Create Account"
-        : "Login";
-  }
-}
-
-function showAuthMessage(
-  message,
-  type = ""
-) {
-  const box =
-    document.getElementById(
-      "authMessage"
-    );
-
-  if (!box) return;
-
-  box.textContent =
-    message;
-
-  box.className =
-    `auth-message ${type}`;
-}
-
-function clearAuthMessage() {
-  const box =
-    document.getElementById(
-      "authMessage"
-    );
-
-  if (!box) return;
-
-  box.textContent = "";
-
-  box.className =
-    "auth-message";
-}
-
-// ======================================================
-// GLOBAL FUNCTIONS
-// ======================================================
-
-window.openModal =
-  openModal;
-
-window.closeModal =
-  closeModal;
-
-window.deleteField =
-  deleteField;
-
-window.deleteFarmer =
-  deleteFarmer;
-
-window.deleteObservation =
-  deleteObservation;
-
-window.deleteDiary =
-  deleteDiary;
-
-window.deleteAllData =
-  deleteAllData;
-
-window.exportBackup =
-  exportBackup;
-
-window.restoreBackup =
-  restoreBackup;
-        /* ======================================================
-   NAYAKHAP AGRO RESEARCH - PREMIUM ANIMATIONS
-   ====================================================== */
 
 html {
     scroll-behavior: smooth;
 }
 
 body {
-    overflow-x: hidden;
+    font-family: "Inter", Arial, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    min-height: 100vh;
 }
 
-/* Smooth page appearance */
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =====================================================
+   AUTH
+===================================================== */
+
+#authScreen {
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 25px;
+
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            #d9f2df 0,
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 80%,
+            #e2f4e7 0,
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            #eef8f0,
+            #f8faf8
+        );
+
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-background-circle {
+
+    position: absolute;
+
+    border-radius: 50%;
+
+    background: rgba(36, 122, 67, 0.08);
+
+    animation: floating 8s ease-in-out infinite;
+}
+
+.circle-one {
+
+    width: 350px;
+    height: 350px;
+
+    top: -150px;
+    left: -100px;
+}
+
+.circle-two {
+
+    width: 300px;
+    height: 300px;
+
+    bottom: -130px;
+    right: -80px;
+
+    animation-delay: 2s;
+}
+
+.auth-card {
+
+    width: 100%;
+    max-width: 440px;
+
+    background: rgba(255, 255, 255, 0.96);
+
+    border: 1px solid var(--border);
+
+    border-radius: 24px;
+
+    padding: 34px;
+
+    box-shadow:
+        0 25px 70px rgba(24, 91, 49, 0.12);
+
+    position: relative;
+
+    z-index: 2;
+
+    animation: authEnter 0.7s ease;
+}
+
+.auth-brand {
+
+    text-align: center;
+
+    margin-bottom: 25px;
+}
+
+.auth-logo {
+
+    width: 65px;
+    height: 65px;
+
+    margin: auto;
+    margin-bottom: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 19px;
+
+    background: var(--green-light);
+
+    font-size: 32px;
+
+    box-shadow:
+        0 10px 25px rgba(36, 122, 67, 0.1);
+
+    animation: floating 4s ease-in-out infinite;
+}
+
+.brand-title {
+
+    font-size: 25px;
+    font-weight: 800;
+
+    color: var(--green-dark);
+}
+
+.brand-subtitle {
+
+    font-size: 13px;
+    color: var(--green);
+
+    margin-top: 2px;
+}
+
+.auth-brand p {
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+    margin-top: 10px;
+}
+
+.auth-tabs {
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 8px;
+
+    margin-bottom: 22px;
+}
+
+.auth-tab {
+
+    border: 1px solid var(--border);
+
+    background: white;
+
+    padding: 11px;
+
+    border-radius: 10px;
+
+    font-weight: 600;
+
+    color: #536057;
+
+    transition: 0.25s;
+}
+
+.auth-tab:hover {
+
+    border-color: var(--green);
+}
+
+.auth-tab.active {
+
+    background: var(--green);
+
+    color: white;
+
+    border-color: var(--green);
+
+    box-shadow:
+        0 7px 18px rgba(36, 122, 67, 0.18);
+}
+
+.auth-message {
+
+    min-height: 22px;
+
+    margin-top: 12px;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+.auth-message.error {
+    color: var(--danger);
+}
+
+.auth-message.success {
+    color: var(--green);
+}
+
+.auth-security {
+
+    margin-top: 20px;
+
+    padding: 12px;
+
+    border-radius: 10px;
+
+    background: var(--green-soft);
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+    text-align: center;
+}
+
+
+/* =====================================================
+   APP
+===================================================== */
+
+.app {
+
+    display: flex;
+
+    min-height: 100vh;
+}
+
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
+
+.sidebar {
+
+    width: 250px;
+
+    background: white;
+
+    border-right: 1px solid var(--border);
+
+    padding: 24px 15px;
+
+    position: fixed;
+
+    height: 100vh;
+
+    left: 0;
+    top: 0;
+
+    z-index: 50;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.brand {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 0 10px 28px;
+}
+
+.brand-icon {
+
+    width: 43px;
+    height: 43px;
+
+    border-radius: 12px;
+
+    background: var(--green-light);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 22px;
+}
+
+.brand h2 {
+
+    font-size: 18px;
+
+    color: var(--text);
+}
+
+.brand span {
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+nav {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+.nav-btn {
+
+    border: 0;
+
+    background: transparent;
+
+    padding: 12px 13px;
+
+    text-align: left;
+
+    border-radius: 10px;
+
+    color: #59665d;
+
+    transition: 0.25s;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    font-size: 13px;
+}
+
+.nav-btn span {
+
+    width: 20px;
+
+    text-align: center;
+}
+
+.nav-btn:hover {
+
+    background: var(--green-light);
+
+    color: var(--green-dark);
+
+    transform: translateX(3px);
+}
+
+.nav-btn.active {
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--green),
+            #2d8b50
+        );
+
+    color: white;
+
+    box-shadow:
+        0 7px 20px rgba(36, 122, 67, 0.2);
+}
+
+.sidebar-footer {
+
+    margin-top: auto;
+
+    padding: 15px 10px;
+
+    border-top: 1px solid var(--border);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+
+    font-size: 11px;
+}
+
+.sidebar-footer small {
+    color: var(--muted);
+}
+
+.sidebar-footer span {
+    color: var(--muted);
+}
+
+
+/* =====================================================
+   MAIN
+===================================================== */
+
+.main {
+
+    margin-left: 250px;
+
+    width: calc(100% - 250px);
+
+    padding: 27px 30px 50px;
+
+    min-height: 100vh;
+}
+
+.topbar {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 28px;
+}
+
+.topbar-left {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.topbar h1 {
+
+    font-size: 27px;
+
+    font-weight: 800;
+}
+
+.topbar p {
+
+    color: var(--muted);
+
+    margin-top: 5px;
+
+    font-size: 12px;
+}
+
+.topbar-right {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+.cloud-status {
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    padding: 8px 12px;
+
+    border-radius: 30px;
+
+    font-size: 11px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+}
+
+.cloud-dot {
+
+    width: 7px;
+    height: 7px;
+
+    background: #35a85b;
+
+    border-radius: 50%;
+
+    box-shadow:
+        0 0 0 4px #e7f6eb;
+}
+
+.user-box {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.user-avatar {
+
+    width: 35px;
+    height: 35px;
+
+    border-radius: 50%;
+
+    background: var(--green-light);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.user-details {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.user-details small {
+
+    max-width: 180px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+.logout-btn {
+
+    border: 1px solid #f3cbc7;
+
+    background: #fff0ef;
+
+    color: var(--danger);
+
+    padding: 7px 10px;
+
+    border-radius: 8px;
+
+    font-size: 11px;
+
+    transition: 0.2s;
+}
+
+.logout-btn:hover {
+
+    background: #ffe2df;
+
+    transform: translateY(-1px);
+}
+
+.mobile-menu {
+
+    display: none;
+
+    border: 0;
+
+    background: transparent;
+
+    font-size: 23px;
+}
+
+
+/* =====================================================
+   PAGE
+===================================================== */
+
+.page {
+    display: none;
+}
 
 .page.active {
-    animation: pageEnter 0.45s ease both;
+
+    display: block;
+
+    animation: pageEnter 0.35s ease;
+}
+
+
+/* =====================================================
+   WELCOME
+===================================================== */
+
+.welcome {
+
+    background:
+        linear-gradient(
+            120deg,
+            #185b31,
+            #2f8d51
+        );
+
+    color: white;
+
+    border-radius: 20px;
+
+    padding: 29px 30px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 20px;
+
+    position: relative;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 15px 35px rgba(24, 91, 49, 0.15);
+}
+
+.welcome::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 280px;
+    height: 280px;
+
+    border-radius: 50%;
+
+    background: rgba(255,255,255,0.05);
+
+    right: 100px;
+    top: -180px;
+}
+
+.welcome-content {
+
+    position: relative;
+
+    z-index: 2;
+}
+
+.eyebrow {
+
+    font-size: 10px;
+
+    letter-spacing: 2px;
+
+    opacity: 0.75;
+
+    font-weight: 600;
+}
+
+.welcome h2 {
+
+    margin: 7px 0;
+
+    font-size: 25px;
+}
+
+.welcome p {
+
+    opacity: 0.84;
+
+    font-size: 12px;
+}
+
+.welcome-actions {
+
+    display: flex;
+
+    gap: 9px;
+
+    margin-top: 18px;
+}
+
+.welcome-btn {
+
+    background: white;
+
+    color: var(--green-dark);
+}
+
+.outline-light-btn {
+
+    background: transparent;
+
+    color: white;
+
+    border: 1px solid rgba(255,255,255,0.35);
+
+    padding: 10px 15px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+}
+
+.welcome-illustration {
+
+    font-size: 90px;
+
+    opacity: 0.9;
+
+    animation: floating 4s ease-in-out infinite;
+
+    filter: drop-shadow(
+        0 15px 15px rgba(0,0,0,0.1)
+    );
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.primary-btn {
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--green),
+            #2f8d51
+        );
+
+    color: white;
+
+    border: none;
+
+    padding: 10px 16px;
+
+    border-radius: 8px;
+
+    font-weight: 600;
+
+    font-size: 12px;
+
+    transition: 0.25s;
+
+    box-shadow:
+        0 5px 15px rgba(36, 122, 67, 0.12);
+}
+
+.primary-btn:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 9px 22px rgba(36, 122, 67, 0.2);
+}
+
+.primary-btn:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+.full {
+
+    width: 100%;
+
+    margin-top: 10px;
+}
+
+.danger-btn {
+
+    background: #fff0ef;
+
+    color: var(--danger);
+
+    border: 1px solid #f3cbc7;
+
+    padding: 10px 15px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+
+/* =====================================================
+   STATS
+===================================================== */
+
+.stats {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 14px;
+
+    margin-bottom: 20px;
+}
+
+.stat-card {
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    padding: 17px;
+
+    display: flex;
+
+    gap: 13px;
+
+    align-items: center;
+
+    box-shadow: var(--shadow);
+
+    transition: 0.25s;
+
+    animation: cardEnter 0.5s ease both;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.08s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+.stat-card:nth-child(4) {
+    animation-delay: 0.24s;
+}
+
+.stat-card:hover {
+
+    transform: translateY(-4px);
+
+    box-shadow: var(--shadow-hover);
+}
+
+.stat-icon {
+
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    background: var(--green-light);
+
+    border-radius: 11px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 20px;
+}
+
+.stat-card span {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+.stat-card strong {
+
+    display: block;
+
+    font-size: 24px;
+
+    margin-top: 2px;
+}
+
+.stat-card small {
+
+    display: block;
+
+    color: #9aa49d;
+
+    font-size: 9px;
+
+    margin-top: 2px;
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+.dashboard-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 18px;
+}
+
+.card {
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 15px;
+
+    padding: 19px;
+
+    box-shadow: var(--shadow);
+
+    transition: 0.25s;
+}
+
+.card:hover {
+
+    box-shadow: var(--shadow-hover);
+}
+
+.card-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 17px;
+}
+
+.card-header h3 {
+
+    font-size: 15px;
+}
+
+.card-header p {
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+    margin-top: 4px;
+}
+
+.card-icon {
+
+    width: 35px;
+    height: 35px;
+
+    border-radius: 9px;
+
+    background: var(--green-light);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.empty {
+
+    color: var(--muted);
+
+    padding: 28px;
+
+    text-align: center;
+
+    font-size: 12px;
+}
+
+.crop-row {
+
+    padding: 9px 0;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.crop-top {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    font-size: 12px;
+
+    margin-bottom: 7px;
+}
+
+.crop-bar {
+
+    height: 6px;
+
+    background: #edf2ee;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+}
+
+.crop-bar-fill {
+
+    height: 100%;
+
+    width: 0;
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--green),
+            #62b477
+        );
+
+    animation: growBar 1s ease forwards;
+}
+
+.activity-item {
+
+    display: flex;
+
+    gap: 10px;
+
+    padding: 10px 0;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.activity-dot {
+
+    width: 8px;
+    height: 8px;
+
+    margin-top: 5px;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    flex-shrink: 0;
+}
+
+.activity-text {
+
+    font-size: 11px;
+
+    line-height: 1.4;
+}
+
+.activity-time {
+
+    color: var(--muted);
+
+    font-size: 9px;
+
+    margin-top: 3px;
+}
+
+
+/* =====================================================
+   QUICK ACTIONS
+===================================================== */
+
+.quick-card {
+
+    margin-top: 18px;
+}
+
+.quick-actions {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 10px;
+}
+
+.quick-action {
+
+    border: 1px solid var(--border);
+
+    background: #fbfdfb;
+
+    border-radius: 11px;
+
+    padding: 13px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    text-align: left;
+
+    transition: 0.25s;
+}
+
+.quick-action > span {
+
+    width: 35px;
+    height: 35px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: var(--green-light);
+
+    border-radius: 9px;
+
+    font-size: 17px;
+}
+
+.quick-action strong {
+
+    display: block;
+
+    font-size: 11px;
+}
+
+.quick-action small {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 9px;
+
+    margin-top: 3px;
+}
+
+.quick-action:hover {
+
+    transform: translateY(-3px);
+
+    border-color: #b9d8c1;
+
+    background: white;
+
+    box-shadow: var(--shadow-hover);
+}
+
+
+/* =====================================================
+   SECTIONS
+===================================================== */
+
+.section-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 18px;
+}
+
+.section-header h2 {
+
+    font-size: 22px;
+}
+
+.section-header p {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    margin-top: 4px;
+}
+
+.toolbar {
+
+    margin-bottom: 13px;
+}
+
+.toolbar input {
+
+    max-width: 480px;
+}
+
+
+/* =====================================================
+   INFO BANNER
+===================================================== */
+
+.info-banner {
+
+    background: #eef8f1;
+
+    border: 1px solid #d9eddd;
+
+    color: #496352;
+
+    border-radius: 10px;
+
+    padding: 11px 14px;
+
+    margin-bottom: 14px;
+
+    font-size: 11px;
+}
+
+
+/* =====================================================
+   TABLE
+===================================================== */
+
+.table-card {
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    overflow-x: auto;
+
+    box-shadow: var(--shadow);
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    min-width: 700px;
+}
+
+th,
+td {
+
+    padding: 13px 15px;
+
+    border-bottom: 1px solid var(--border);
+
+    text-align: left;
+
+    font-size: 11px;
+}
+
+th {
+
+    color: var(--muted);
+
+    font-weight: 600;
+
+    background: #fafcfb;
+}
+
+td {
+
+    color: #354238;
+}
+
+tr {
+
+    transition: 0.2s;
+}
+
+tbody tr:hover {
+
+    background: #f8fbf9;
+}
+
+.delete-btn {
+
+    border: 0;
+
+    background: #fff4f3;
+
+    color: var(--danger);
+
+    padding: 6px 9px;
+
+    border-radius: 6px;
+
+    font-size: 10px;
+}
+
+.profile-btn {
+
+    border: 0;
+
+    background: var(--green-light);
+
+    color: var(--green-dark);
+
+    padding: 6px 9px;
+
+    border-radius: 6px;
+
+    font-size: 10px;
+
+    margin-right: 4px;
+}
+
+
+/* =====================================================
+   DIARY
+===================================================== */
+
+.diary-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 14px;
+}
+
+.diary-card {
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    padding: 17px;
+
+    box-shadow: var(--shadow);
+
+    transition: 0.25s;
+
+    animation: cardEnter 0.4s ease;
+}
+
+.diary-card:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow: var(--shadow-hover);
+}
+
+.diary-date {
+
+    color: var(--green);
+
+    font-size: 10px;
+
+    font-weight: 700;
+}
+
+.diary-card h3 {
+
+    margin: 7px 0;
+
+    font-size: 14px;
+}
+
+.diary-card p {
+
+    color: #58655b;
+
+    line-height: 1.6;
+
+    font-size: 11px;
+}
+
+
+/* =====================================================
+   BACKUP
+===================================================== */
+
+.backup-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 15px;
+}
+
+.backup-card {
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    padding: 22px;
+
+    box-shadow: var(--shadow);
+
+    transition: 0.25s;
+}
+
+.backup-card:hover {
+
+    transform: translateY(-4px);
+
+    box-shadow: var(--shadow-hover);
+}
+
+.big-icon {
+
+    font-size: 29px;
+}
+
+.backup-card h3 {
+
+    margin: 10px 0 7px;
+
+    font-size: 16px;
+}
+
+.backup-card p {
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+    margin-bottom: 17px;
+}
+
+.danger-card {
+
+    border-color: #f1d8d5;
+}
+
+.security-note {
+
+    margin-top: 18px;
+
+    padding: 17px;
+
+    border-radius: 12px;
+
+    background: #fff9e8;
+
+    border: 1px solid #f2e2ae;
+
+    font-size: 12px;
+}
+
+.security-note p {
+
+    color: #746a4b;
+
+    font-size: 11px;
+
+    margin-top: 5px;
+
+    line-height: 1.6;
+}
+
+
+/* =====================================================
+   FORMS
+===================================================== */
+
+label {
+
+    display: block;
+
+    font-size: 11px;
+
+    color: #536057;
+
+    margin-bottom: 14px;
+}
+
+input,
+textarea,
+select {
+
+    width: 100%;
+
+    margin-top: 6px;
+
+    border: 1px solid #d9e1db;
+
+    border-radius: 8px;
+
+    padding: 10px;
+
+    background: white;
+
+    outline: none;
+
+    color: var(--text);
+
+    transition: 0.2s;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+
+    border-color: #b9cabe;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+
+    border-color: var(--green);
+
+    box-shadow:
+        0 0 0 3px rgba(36, 122, 67, 0.08);
+}
+
+textarea {
+
+    min-height: 90px;
+
+    resize: vertical;
+}
+
+.form-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 0 15px;
+}
+
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.modal {
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(8, 28, 15, 0.48);
+
+    backdrop-filter: blur(5px);
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    z-index: 100;
+
+    padding: 20px;
+}
+
+.modal.open {
+
+    display: flex;
+
+    animation: modalFade 0.2s ease;
+}
+
+.modal-box {
+
+    background: white;
+
+    border-radius: 18px;
+
+    width: 100%;
+
+    max-width: 680px;
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    padding: 25px;
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,0.18);
+
+    animation: modalEnter 0.25s ease;
+}
+
+.modal-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+
+    font-size: 19px;
+
+    margin-top: 3px;
+}
+
+.modal-header button {
+
+    border: none;
+
+    background: #f3f6f3;
+
+    width: 33px;
+    height: 33px;
+
+    border-radius: 50%;
+
+    font-size: 22px;
+
+    line-height: 1;
+
+    color: #536057;
+}
+
+.modal-eyebrow {
+
+    font-size: 9px;
+
+    color: var(--green);
+
+    letter-spacing: 1.5px;
+
+    font-weight: 700;
+}
+
+
+/* =====================================================
+   FARMER PROFILE
+===================================================== */
+
+.profile-modal {
+
+    max-width: 600px;
+}
+
+.profile-header {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 15px;
+
+    background: var(--green-soft);
+
+    border-radius: 13px;
+
+    margin-bottom: 15px;
+}
+
+.profile-avatar {
+
+    width: 55px;
+    height: 55px;
+
+    border-radius: 15px;
+
+    background: var(--green-light);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 25px;
+}
+
+.profile-code {
+
+    color: var(--green);
+
+    font-weight: 700;
+
+    font-size: 12px;
+}
+
+.profile-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 10px;
+
+    margin-bottom: 15px;
+}
+
+.profile-item {
+
+    padding: 12px;
+
+    background: #fafcfb;
+
+    border: 1px solid var(--border);
+
+    border-radius: 10px;
+}
+
+.profile-item small {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 9px;
+
+    margin-bottom: 4px;
+}
+
+.profile-item strong {
+
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   TOAST
+===================================================== */
+
+.toast {
+
+    position: fixed;
+
+    right: 25px;
+
+    bottom: 25px;
+
+    background: #17231a;
+
+    color: white;
+
+    padding: 12px 16px;
+
+    border-radius: 10px;
+
+    font-size: 11px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.2);
+
+    transform:
+        translateY(30px);
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition: 0.3s;
+
+    z-index: 200;
+}
+
+.toast.show {
+
+    transform:
+        translateY(0);
+
+    opacity: 1;
+}
+
+
+/* =====================================================
+   ANIMATIONS
+===================================================== */
+
+@keyframes authEnter {
+
+    from {
+        opacity: 0;
+        transform: translateY(25px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 @keyframes pageEnter {
+
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes cardEnter {
+
     from {
         opacity: 0;
         transform: translateY(12px);
@@ -2073,180 +1889,22 @@ body {
     }
 }
 
-/* Sidebar */
+@keyframes modalFade {
 
-.sidebar {
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
-}
-
-.brand-icon {
-    transition:
-        transform 0.35s ease,
-        box-shadow 0.35s ease;
-}
-
-.brand-icon:hover {
-    transform: rotate(-8deg) scale(1.08);
-    box-shadow: 0 8px 25px rgba(36, 122, 67, 0.18);
-}
-
-/* Navigation */
-
-.nav-btn {
-    position: relative;
-    overflow: hidden;
-}
-
-.nav-btn::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    width: 3px;
-    height: 0;
-    background: white;
-    border-radius: 10px;
-    transform: translateY(-50%);
-    transition: height 0.25s ease;
-}
-
-.nav-btn.active::before {
-    height: 60%;
-}
-
-.nav-btn:hover {
-    transform: translateX(3px);
-}
-
-/* Welcome card */
-
-.welcome {
-    position: relative;
-    overflow: hidden;
-    box-shadow:
-        0 15px 35px rgba(24, 91, 49, 0.12);
-}
-
-.welcome::before {
-    content: "";
-    position: absolute;
-    width: 250px;
-    height: 250px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    right: -80px;
-    top: -100px;
-    animation: floatCircle 7s ease-in-out infinite;
-}
-
-.welcome::after {
-    content: "🌱";
-    position: absolute;
-    right: 45px;
-    bottom: 15px;
-    font-size: 65px;
-    opacity: 0.13;
-    animation: plantFloat 4s ease-in-out infinite;
-}
-
-@keyframes floatCircle {
-    0%,
-    100% {
-        transform: translate(0, 0);
-    }
-
-    50% {
-        transform: translate(-20px, 18px);
-    }
-}
-
-@keyframes plantFloat {
-    0%,
-    100% {
-        transform: translateY(0) rotate(0deg);
-    }
-
-    50% {
-        transform: translateY(-8px) rotate(4deg);
-    }
-}
-
-/* Buttons */
-
-.primary-btn {
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        opacity 0.2s ease;
-}
-
-.primary-btn:hover {
-    transform: translateY(-2px);
-    box-shadow:
-        0 8px 20px rgba(36, 122, 67, 0.18);
-}
-
-.primary-btn:active {
-    transform: scale(0.97);
-}
-
-/* Stats */
-
-.stat-card {
-    position: relative;
-    overflow: hidden;
-    transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease,
-        border-color 0.25s ease;
-}
-
-.stat-card::after {
-    content: "";
-    position: absolute;
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    background: var(--green-light);
-    right: -40px;
-    bottom: -45px;
-    transition:
-        transform 0.35s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-6px);
-    border-color: #cbded0;
-    box-shadow:
-        0 15px 30px rgba(30, 80, 45, 0.10);
-}
-
-.stat-card:hover::after {
-    transform: scale(1.35);
-}
-
-.stat-icon {
-    transition:
-        transform 0.3s ease;
-}
-
-.stat-card:hover .stat-icon {
-    transform: rotate(6deg) scale(1.1);
-}
-
-/* Dashboard entrance */
-
-.dashboard-animate {
-    animation:
-        dashboardCard 0.6s ease both;
-}
-
-@keyframes dashboardCard {
     from {
         opacity: 0;
-        transform: translateY(18px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalEnter {
+
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
     }
 
     to {
@@ -2255,252 +1913,202 @@ body {
     }
 }
 
-/* Cards */
+@keyframes floating {
 
-.card,
-.table-card,
-.backup-card,
-.diary-card {
-    transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease,
-        border-color 0.25s ease;
-}
+    0%,
+    100% {
+        transform: translateY(0);
+    }
 
-.card:hover,
-.backup-card:hover,
-.diary-card:hover {
-    transform: translateY(-4px);
-    box-shadow:
-        0 12px 28px rgba(20, 60, 30, 0.08);
-    border-color: #cbded0;
-}
-
-/* Crop bars */
-
-.crop-stat {
-    padding: 11px 0;
-}
-
-.crop-stat-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 7px;
-}
-
-.crop-stat small {
-    display: block;
-    margin-top: 5px;
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.crop-bar {
-    width: 100%;
-    height: 7px;
-    background: #edf2ee;
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.crop-bar-fill {
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        #247a43,
-        #5dbb77
-    );
-    border-radius: 20px;
-    animation: growBar 1s ease both;
-    transform-origin: left;
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 @keyframes growBar {
+
     from {
-        transform: scaleX(0);
-    }
-
-    to {
-        transform: scaleX(1);
+        width: 0;
     }
 }
 
-/* Recent activity */
 
-.activity-item {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-    transition:
-        transform 0.2s ease,
-        padding-left 0.2s ease;
-}
+/* =====================================================
+   RESPONSIVE
+===================================================== */
 
-.activity-item:hover {
-    transform: translateX(4px);
-}
+@media (max-width: 1100px) {
 
-.activity-icon {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    border-radius: 10px;
-    background: var(--green-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+    .stats {
 
-.activity-time {
-    color: var(--muted);
-    font-size: 11px;
-    margin-top: 4px;
-}
-
-/* Table rows */
-
-.data-row {
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
-}
-
-.data-row:hover {
-    background: #f7fbf8;
-}
-
-/* Inputs */
-
-input,
-textarea,
-select {
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        transform 0.2s ease;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-    box-shadow:
-        0 0 0 3px rgba(36, 122, 67, 0.10);
-}
-
-/* Modal */
-
-.modal {
-    backdrop-filter: blur(5px);
-}
-
-.modal.open .modal-box {
-    animation:
-        modalIn 0.3s ease both;
-}
-
-@keyframes modalIn {
-    from {
-        opacity: 0;
-        transform: translateY(25px) scale(0.96);
+        grid-template-columns:
+            repeat(2, 1fr);
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+    .quick-actions {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .backup-grid {
+
+        grid-template-columns: 1fr;
     }
 }
 
-/* Delete button */
+@media (max-width: 850px) {
 
-.delete-btn {
-    transition:
-        transform 0.2s ease,
-        background 0.2s ease;
-}
+    .sidebar {
 
-.delete-btn:hover {
-    transform: translateY(-1px);
-    background: #fff0ef;
-}
+        transform:
+            translateX(-100%);
 
-/* Toast */
-
-#agroToast {
-    position: fixed;
-    right: 25px;
-    bottom: 25px;
-    z-index: 9999;
-
-    background: #17231a;
-    color: white;
-
-    padding: 13px 18px;
-    border-radius: 12px;
-
-    font-size: 13px;
-
-    box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.20);
-
-    opacity: 0;
-    transform:
-        translateY(20px)
-        scale(0.95);
-
-    pointer-events: none;
-
-    transition:
-        opacity 0.25s ease,
-        transform 0.25s ease;
-}
-
-#agroToast.show {
-    opacity: 1;
-    transform:
-        translateY(0)
-        scale(1);
-}
-
-/* Loading effect */
-
-button:disabled {
-    cursor: wait;
-    opacity: 0.65;
-}
-
-/* Mobile */
-
-@media (max-width: 750px) {
-
-    .welcome::after {
-        right: 20px;
-        font-size: 45px;
+        transition: 0.3s;
     }
 
-    .stat-card:hover {
-        transform: translateY(-3px);
+    .sidebar.open {
+
+        transform:
+            translateX(0);
     }
 
-    #agroToast {
-        left: 18px;
-        right: 18px;
-        bottom: 18px;
-        text-align: center;
+    .main {
+
+        margin-left: 0;
+
+        width: 100%;
+
+        padding: 20px;
+    }
+
+    .mobile-menu {
+
+        display: inline-block;
+    }
+
+    .cloud-status {
+
+        display: none;
+    }
+
+    .dashboard-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+    .diary-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
     }
 }
 
-/* Accessibility */
+@media (max-width: 600px) {
 
-@media (prefers-reduced-motion: reduce) {
+    .topbar {
 
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        align-items: flex-start;
+    }
+
+    .topbar-right {
+
+        gap: 5px;
+    }
+
+    .user-details small {
+
+        display: none;
+    }
+
+    .user-box {
+
+        margin-top: 3px;
+    }
+
+    .topbar h1 {
+
+        font-size: 21px;
+    }
+
+    .welcome {
+
+        padding: 23px;
+
+        align-items: flex-start;
+    }
+
+    .welcome h2 {
+
+        font-size: 21px;
+    }
+
+    .welcome-illustration {
+
+        display: none;
+    }
+
+    .welcome-actions {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+    .stats {
+
+        grid-template-columns: 1fr;
+    }
+
+    .section-header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 12px;
+    }
+
+    .diary-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+    .quick-actions {
+
+        grid-template-columns: 1fr;
+    }
+
+    .modal-box {
+
+        padding: 20px;
+    }
+
+    .profile-grid {
+
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 430px) {
+
+    .main {
+
+        padding: 15px;
+    }
+
+    .auth-card {
+
+        padding: 24px 19px;
+    }
+
+    .user-avatar {
+
+        display: none;
     }
 }
