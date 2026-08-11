@@ -1,6 +1,10 @@
 // ======================================================
 // NAYAKHAP AGRO RESEARCH
-// SUPABASE CLOUD VERSION
+// SUPABASE CLOUD VERSION - DASHBOARD 2.0
+// ======================================================
+
+// ======================================================
+// SUPABASE CONFIG
 // ======================================================
 
 const SUPABASE_URL =
@@ -15,7 +19,6 @@ const supabaseClient =
         SUPABASE_PUBLISHABLE_KEY
     );
 
-
 // ======================================================
 // GLOBAL DATA
 // ======================================================
@@ -27,6 +30,7 @@ let farmers = [];
 let observations = [];
 let diaryEntries = [];
 
+let dashboardInitialized = false;
 
 // ======================================================
 // DOM READY
@@ -38,11 +42,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupAuth();
     setupForms();
     setupSearch();
+    setupDashboardEffects();
 
     await checkAuth();
 
 });
-
 
 // ======================================================
 // AUTHENTICATION
@@ -58,6 +62,8 @@ function setupAuth() {
 
     const authForm =
         document.getElementById("authForm");
+
+    if (!loginTab || !signupTab || !authForm) return;
 
     loginTab.addEventListener("click", () => {
 
@@ -77,7 +83,6 @@ function setupAuth() {
 
     });
 
-
     signupTab.addEventListener("click", () => {
 
         signupTab.classList.add("active");
@@ -96,7 +101,6 @@ function setupAuth() {
 
     });
 
-
     authForm.addEventListener("submit", async (event) => {
 
         event.preventDefault();
@@ -113,7 +117,6 @@ function setupAuth() {
         const confirmPassword =
             document.getElementById("authConfirmPassword").value;
 
-
         if (!email || !password) {
 
             showAuthMessage(
@@ -123,7 +126,6 @@ function setupAuth() {
 
             return;
         }
-
 
         if (isSignup) {
 
@@ -137,7 +139,6 @@ function setupAuth() {
                 return;
             }
 
-
             if (password.length < 6) {
 
                 showAuthMessage(
@@ -147,7 +148,6 @@ function setupAuth() {
 
                 return;
             }
-
 
             await signupUser(
                 email,
@@ -165,13 +165,14 @@ function setupAuth() {
 
     });
 
-
     document
         .getElementById("logoutBtn")
-        .addEventListener("click", logoutUser);
+        ?.addEventListener(
+            "click",
+            logoutUser
+        );
 
 }
-
 
 // ======================================================
 // SIGN UP
@@ -198,9 +199,7 @@ async function signupUser(email, password) {
 
     });
 
-
     setAuthLoading(false);
-
 
     if (error) {
 
@@ -211,7 +210,6 @@ async function signupUser(email, password) {
 
         return;
     }
-
 
     if (data.session) {
 
@@ -235,7 +233,6 @@ async function signupUser(email, password) {
 
 }
 
-
 // ======================================================
 // LOGIN
 // ======================================================
@@ -254,9 +251,7 @@ async function loginUser(email, password) {
 
     });
 
-
     setAuthLoading(false);
-
 
     if (error) {
 
@@ -268,13 +263,11 @@ async function loginUser(email, password) {
         return;
     }
 
-
     currentUser = data.user;
 
     await showApp();
 
 }
-
 
 // ======================================================
 // LOGOUT
@@ -286,7 +279,6 @@ async function logoutUser() {
         error
     } = await supabaseClient.auth.signOut();
 
-
     if (error) {
 
         alert(error.message);
@@ -294,14 +286,12 @@ async function logoutUser() {
         return;
     }
 
-
     currentUser = null;
 
     fields = [];
     farmers = [];
     observations = [];
     diaryEntries = [];
-
 
     document.getElementById("appShell").style.display =
         "none";
@@ -311,9 +301,8 @@ async function logoutUser() {
 
 }
 
-
 // ======================================================
-// CHECK EXISTING SESSION
+// CHECK AUTH
 // ======================================================
 
 async function checkAuth() {
@@ -321,7 +310,6 @@ async function checkAuth() {
     const {
         data
     } = await supabaseClient.auth.getSession();
-
 
     if (data.session) {
 
@@ -340,7 +328,6 @@ async function checkAuth() {
 
     }
 
-
     supabaseClient.auth.onAuthStateChange(
         async (_event, session) => {
 
@@ -356,7 +343,6 @@ async function checkAuth() {
 
 }
 
-
 // ======================================================
 // SHOW APPLICATION
 // ======================================================
@@ -369,126 +355,132 @@ async function showApp() {
     document.getElementById("appShell").style.display =
         "flex";
 
+    const userEmail =
+        document.getElementById("userEmail");
 
-    document.getElementById("userEmail").textContent =
-        currentUser?.email || "";
+    if (userEmail) {
 
+        userEmail.textContent =
+            currentUser?.email || "";
+
+    }
+
+    updateConnectionStatus();
+
+    updateGreeting();
 
     await loadAllData();
 
-    updateDashboard();
-
 }
 
-
 // ======================================================
-// LOAD ALL CLOUD DATA
+// LOAD CLOUD DATA
 // ======================================================
 
 async function loadAllData() {
 
     if (!currentUser) return;
 
+    try {
 
-    const [
-        fieldsResponse,
-        farmersResponse,
-        observationsResponse,
-        diaryResponse
-    ] = await Promise.all([
+        const [
+            fieldsResponse,
+            farmersResponse,
+            observationsResponse,
+            diaryResponse
+        ] = await Promise.all([
 
-        supabaseClient
-            .from("fields")
-            .select("*")
-            .eq("user_id", currentUser.id)
-            .order("created_at", {
-                ascending: false
-            }),
+            supabaseClient
+                .from("fields")
+                .select("*")
+                .eq("user_id", currentUser.id)
+                .order("created_at", {
+                    ascending: false
+                }),
 
-        supabaseClient
-            .from("farmers")
-            .select("*")
-            .eq("user_id", currentUser.id)
-            .order("created_at", {
-                ascending: false
-            }),
+            supabaseClient
+                .from("farmers")
+                .select("*")
+                .eq("user_id", currentUser.id)
+                .order("created_at", {
+                    ascending: false
+                }),
 
-        supabaseClient
-            .from("crop_observations")
-            .select("*")
-            .eq("user_id", currentUser.id)
-            .order("created_at", {
-                ascending: false
-            }),
+            supabaseClient
+                .from("crop_observations")
+                .select("*")
+                .eq("user_id", currentUser.id)
+                .order("created_at", {
+                    ascending: false
+                }),
 
-        supabaseClient
-            .from("field_diary")
-            .select("*")
-            .eq("user_id", currentUser.id)
-            .order("created_at", {
-                ascending: false
-            })
+            supabaseClient
+                .from("field_diary")
+                .select("*")
+                .eq("user_id", currentUser.id)
+                .order("created_at", {
+                    ascending: false
+                })
 
-    ]);
+        ]);
 
+        if (fieldsResponse.error) {
+            console.error(
+                "Fields:",
+                fieldsResponse.error
+            );
+        }
 
-    if (fieldsResponse.error) {
+        if (farmersResponse.error) {
+            console.error(
+                "Farmers:",
+                farmersResponse.error
+            );
+        }
+
+        if (observationsResponse.error) {
+            console.error(
+                "Observations:",
+                observationsResponse.error
+            );
+        }
+
+        if (diaryResponse.error) {
+            console.error(
+                "Diary:",
+                diaryResponse.error
+            );
+        }
+
+        fields =
+            fieldsResponse.data || [];
+
+        farmers =
+            farmersResponse.data || [];
+
+        observations =
+            observationsResponse.data || [];
+
+        diaryEntries =
+            diaryResponse.data || [];
+
+        renderAll();
+
+    } catch (error) {
 
         console.error(
-            "Fields:",
-            fieldsResponse.error
+            "Cloud data error:",
+            error
+        );
+
+        showToast(
+            "Could not refresh cloud data.",
+            "error"
         );
 
     }
-
-
-    if (farmersResponse.error) {
-
-        console.error(
-            "Farmers:",
-            farmersResponse.error
-        );
-
-    }
-
-
-    if (observationsResponse.error) {
-
-        console.error(
-            "Observations:",
-            observationsResponse.error
-        );
-
-    }
-
-
-    if (diaryResponse.error) {
-
-        console.error(
-            "Diary:",
-            diaryResponse.error
-        );
-
-    }
-
-
-    fields =
-        fieldsResponse.data || [];
-
-    farmers =
-        farmersResponse.data || [];
-
-    observations =
-        observationsResponse.data || [];
-
-    diaryEntries =
-        diaryResponse.data || [];
-
-
-    renderAll();
 
 }
-
 
 // ======================================================
 // NAVIGATION
@@ -498,7 +490,6 @@ function setupNavigation() {
 
     const buttons =
         document.querySelectorAll(".nav-btn");
-
 
     buttons.forEach(button => {
 
@@ -516,7 +507,6 @@ function setupNavigation() {
 
     });
 
-
     document
         .getElementById("mobileMenu")
         ?.addEventListener(
@@ -525,14 +515,13 @@ function setupNavigation() {
 
                 document
                     .querySelector(".sidebar")
-                    .classList
+                    ?.classList
                     .toggle("open");
 
             }
         );
 
 }
-
 
 function showPage(page) {
 
@@ -544,7 +533,6 @@ function showPage(page) {
 
         });
 
-
     const target =
         document.getElementById(page);
 
@@ -552,8 +540,15 @@ function showPage(page) {
 
         target.classList.add("active");
 
-    }
+        target.classList.add("page-enter");
 
+        setTimeout(() => {
+
+            target.classList.remove("page-enter");
+
+        }, 450);
+
+    }
 
     document
         .querySelectorAll(".nav-btn")
@@ -565,7 +560,6 @@ function showPage(page) {
             );
 
         });
-
 
     const titles = {
 
@@ -589,10 +583,15 @@ function showPage(page) {
 
     };
 
+    const pageTitle =
+        document.getElementById("pageTitle");
 
-    document.getElementById("pageTitle").textContent =
-        titles[page] || "Research Dashboard";
+    if (pageTitle) {
 
+        pageTitle.textContent =
+            titles[page] || "Research Dashboard";
+
+    }
 
     document
         .querySelector(".sidebar")
@@ -600,7 +599,6 @@ function showPage(page) {
         .remove("open");
 
 }
-
 
 // ======================================================
 // FORMS
@@ -610,47 +608,53 @@ function setupForms() {
 
     document
         .getElementById("fieldForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveField
         );
 
-
     document
         .getElementById("farmerForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveFarmer
         );
 
-
     document
         .getElementById("healthForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveHealthObservation
         );
 
-
     document
         .getElementById("diaryForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveDiaryEntry
         );
 
+    const healthDate =
+        document.getElementById("healthDate");
 
-    document
-        .getElementById("healthDate").value =
-        today();
+    if (healthDate) {
 
+        healthDate.value =
+            today();
 
-    document
-        .getElementById("diaryDate").value =
-        today();
+    }
+
+    const diaryDate =
+        document.getElementById("diaryDate");
+
+    if (diaryDate) {
+
+        diaryDate.value =
+            today();
+
+    }
 
 }
-
 
 // ======================================================
 // SAVE FIELD
@@ -660,14 +664,12 @@ async function saveField(event) {
 
     event.preventDefault();
 
-
     if (!currentUser) {
 
         alert("Please login first.");
 
         return;
     }
-
 
     const record = {
 
@@ -707,13 +709,11 @@ async function saveField(event) {
 
     };
 
-
     const {
         error
     } = await supabaseClient
         .from("fields")
         .insert(record);
-
 
     if (error) {
 
@@ -725,15 +725,18 @@ async function saveField(event) {
         return;
     }
 
-
     closeModal("fieldModal");
 
     event.target.reset();
 
+    showToast(
+        "🌱 Field record saved successfully!",
+        "success"
+    );
+
     await loadAllData();
 
 }
-
 
 // ======================================================
 // SAVE FARMER
@@ -743,9 +746,7 @@ async function saveFarmer(event) {
 
     event.preventDefault();
 
-
     if (!currentUser) return;
-
 
     const record = {
 
@@ -774,13 +775,11 @@ async function saveFarmer(event) {
 
     };
 
-
     const {
         error
     } = await supabaseClient
         .from("farmers")
         .insert(record);
-
 
     if (error) {
 
@@ -792,15 +791,18 @@ async function saveFarmer(event) {
         return;
     }
 
-
     closeModal("farmerModal");
 
     event.target.reset();
 
+    showToast(
+        "👨‍🌾 Farmer record added!",
+        "success"
+    );
+
     await loadAllData();
 
 }
-
 
 // ======================================================
 // SAVE CROP HEALTH
@@ -810,9 +812,7 @@ async function saveHealthObservation(event) {
 
     event.preventDefault();
 
-
     if (!currentUser) return;
-
 
     const record = {
 
@@ -843,13 +843,11 @@ async function saveHealthObservation(event) {
 
     };
 
-
     const {
         error
     } = await supabaseClient
         .from("crop_observations")
         .insert(record);
-
 
     if (error) {
 
@@ -861,7 +859,6 @@ async function saveHealthObservation(event) {
         return;
     }
 
-
     closeModal("healthModal");
 
     event.target.reset();
@@ -869,10 +866,14 @@ async function saveHealthObservation(event) {
     document.getElementById("healthDate").value =
         today();
 
+    showToast(
+        "🔬 Crop-health observation saved!",
+        "success"
+    );
+
     await loadAllData();
 
 }
-
 
 // ======================================================
 // SAVE DIARY
@@ -882,9 +883,7 @@ async function saveDiaryEntry(event) {
 
     event.preventDefault();
 
-
     if (!currentUser) return;
-
 
     const record = {
 
@@ -908,13 +907,11 @@ async function saveDiaryEntry(event) {
 
     };
 
-
     const {
         error
     } = await supabaseClient
         .from("field_diary")
         .insert(record);
-
 
     if (error) {
 
@@ -926,7 +923,6 @@ async function saveDiaryEntry(event) {
         return;
     }
 
-
     closeModal("diaryModal");
 
     event.target.reset();
@@ -934,10 +930,14 @@ async function saveDiaryEntry(event) {
     document.getElementById("diaryDate").value =
         today();
 
+    showToast(
+        "📔 Field diary entry saved!",
+        "success"
+    );
+
     await loadAllData();
 
 }
-
 
 // ======================================================
 // SEARCH
@@ -948,14 +948,12 @@ function setupSearch() {
     const search =
         document.getElementById("fieldSearch");
 
-
     search?.addEventListener(
         "input",
         renderFields
     );
 
 }
-
 
 // ======================================================
 // RENDER EVERYTHING
@@ -975,7 +973,6 @@ function renderAll() {
 
 }
 
-
 // ======================================================
 // FIELD TABLE
 // ======================================================
@@ -985,13 +982,14 @@ function renderFields() {
     const tbody =
         document.getElementById("fieldTable");
 
+    if (!tbody) return;
+
     const search =
         (
             document.getElementById("fieldSearch")
                 ?.value || ""
         )
         .toLowerCase();
-
 
     const filtered =
         fields.filter(field => {
@@ -1007,18 +1005,16 @@ function renderFields() {
             .join(" ")
             .toLowerCase();
 
-
             return text.includes(search);
 
         });
-
 
     if (!filtered.length) {
 
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="empty">
-                    No field records found.
+                    🌱 No field records found.
                 </td>
             </tr>
         `;
@@ -1026,11 +1022,10 @@ function renderFields() {
         return;
     }
 
-
     tbody.innerHTML =
         filtered.map(field => `
 
-            <tr>
+            <tr class="table-row-animated">
 
                 <td>
                     <strong>
@@ -1072,7 +1067,6 @@ function renderFields() {
 
 }
 
-
 // ======================================================
 // FARMER TABLE
 // ======================================================
@@ -1082,13 +1076,14 @@ function renderFarmers() {
     const tbody =
         document.getElementById("farmerTable");
 
+    if (!tbody) return;
 
     if (!farmers.length) {
 
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="empty">
-                    No farmer records found.
+                    👨‍🌾 No farmer records found.
                 </td>
             </tr>
         `;
@@ -1096,11 +1091,10 @@ function renderFarmers() {
         return;
     }
 
-
     tbody.innerHTML =
         farmers.map(farmer => `
 
-            <tr>
+            <tr class="table-row-animated">
 
                 <td>
                     <strong>
@@ -1138,7 +1132,6 @@ function renderFarmers() {
 
 }
 
-
 // ======================================================
 // HEALTH TABLE
 // ======================================================
@@ -1148,13 +1141,14 @@ function renderHealth() {
     const tbody =
         document.getElementById("healthTable");
 
+    if (!tbody) return;
 
     if (!observations.length) {
 
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="empty">
-                    No crop-health observations yet.
+                    🔬 No crop-health observations yet.
                 </td>
             </tr>
         `;
@@ -1162,11 +1156,10 @@ function renderHealth() {
         return;
     }
 
-
     tbody.innerHTML =
         observations.map(item => `
 
-            <tr>
+            <tr class="table-row-animated">
 
                 <td>
                     ${formatDate(item.observation_date)}
@@ -1210,7 +1203,6 @@ function renderHealth() {
 
 }
 
-
 // ======================================================
 // DIARY
 // ======================================================
@@ -1220,23 +1212,23 @@ function renderDiary() {
     const container =
         document.getElementById("diaryList");
 
+    if (!container) return;
 
     if (!diaryEntries.length) {
 
         container.innerHTML = `
             <div class="empty">
-                No diary entries yet.
+                📔 No diary entries yet.
             </div>
         `;
 
         return;
     }
 
-
     container.innerHTML =
         diaryEntries.map(entry => `
 
-            <div class="diary-card">
+            <div class="diary-card animated-card">
 
                 <div class="diary-date">
 
@@ -1296,32 +1288,93 @@ function renderDiary() {
 
 }
 
-
 // ======================================================
 // DASHBOARD
 // ======================================================
 
 function updateDashboard() {
 
-    document.getElementById("fieldCount").textContent =
-        fields.length;
+    animateCounter(
+        "fieldCount",
+        fields.length
+    );
 
-    document.getElementById("farmerCount").textContent =
-        farmers.length;
+    animateCounter(
+        "farmerCount",
+        farmers.length
+    );
 
-    document.getElementById("healthCount").textContent =
-        observations.length;
+    animateCounter(
+        "healthCount",
+        observations.length
+    );
 
-    document.getElementById("diaryCount").textContent =
-        diaryEntries.length;
-
+    animateCounter(
+        "diaryCount",
+        diaryEntries.length
+    );
 
     renderCropDistribution();
 
     renderRecentActivity();
 
+    renderResearchInsights();
+
 }
 
+// ======================================================
+// ANIMATED COUNTER
+// ======================================================
+
+function animateCounter(id, target) {
+
+    const element =
+        document.getElementById(id);
+
+    if (!element) return;
+
+    const start =
+        Number(element.textContent) || 0;
+
+    const duration = 800;
+
+    const startTime =
+        performance.now();
+
+    function update(time) {
+
+        const progress =
+            Math.min(
+                (time - startTime) / duration,
+                1
+            );
+
+        const eased =
+            1 - Math.pow(
+                1 - progress,
+                3
+            );
+
+        const value =
+            Math.round(
+                start +
+                (target - start) * eased
+            );
+
+        element.textContent =
+            value;
+
+        if (progress < 1) {
+
+            requestAnimationFrame(update);
+
+        }
+
+    }
+
+    requestAnimationFrame(update);
+
+}
 
 // ======================================================
 // CROP DISTRIBUTION
@@ -1332,61 +1385,94 @@ function renderCropDistribution() {
     const container =
         document.getElementById("cropDistribution");
 
+    if (!container) return;
 
     if (!fields.length) {
 
         container.innerHTML = `
             <div class="empty">
-                No field data yet.
+                🌱 No field data yet.
             </div>
         `;
 
         return;
     }
 
-
     const counts = {};
-
 
     fields.forEach(field => {
 
         const crop =
-            field.crop || "Unknown";
+            field.crop?.trim() ||
+            "Unknown";
 
         counts[crop] =
             (counts[crop] || 0) + 1;
 
     });
 
+    const sorted =
+        Object.entries(counts)
+            .sort(
+                (a, b) =>
+                    b[1] - a[1]
+            );
+
+    const max =
+        sorted[0]?.[1] || 1;
 
     container.innerHTML =
-        Object.entries(counts)
-            .map(([crop, count]) => `
+        sorted
+            .map(([crop, count]) => {
 
-                <div
-                    style="
-                        display:flex;
-                        justify-content:space-between;
-                        padding:10px 0;
-                        border-bottom:1px solid var(--border);
-                    "
-                >
+                const percentage =
+                    Math.round(
+                        (count / fields.length) *
+                        100
+                    );
 
-                    <span>
-                        🌱 ${escapeHtml(crop)}
-                    </span>
+                const width =
+                    Math.max(
+                        8,
+                        (count / max) * 100
+                    );
 
-                    <strong>
-                        ${count}
-                    </strong>
+                return `
 
-                </div>
+                    <div class="crop-stat">
 
-            `)
+                        <div class="crop-stat-top">
+
+                            <span>
+                                🌱 ${escapeHtml(crop)}
+                            </span>
+
+                            <strong>
+                                ${count}
+                                <small>
+                                    (${percentage}%)
+                                </small>
+                            </strong>
+
+                        </div>
+
+                        <div class="crop-progress">
+
+                            <div
+                                class="crop-progress-fill"
+                                style="width:${width}%"
+                            ></div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
             .join("");
 
 }
-
 
 // ======================================================
 // RECENT ACTIVITY
@@ -1397,11 +1483,11 @@ function renderRecentActivity() {
     const container =
         document.getElementById("recentActivity");
 
+    if (!container) return;
 
     const activities = [];
 
-
-    fields.slice(0, 3)
+    fields.slice(0, 5)
         .forEach(item => {
 
             activities.push({
@@ -1409,15 +1495,17 @@ function renderRecentActivity() {
                 date:
                     item.created_at,
 
+                icon:
+                    "🌱",
+
                 text:
-                    `Field added: ${item.field_name}`
+                    `Field added: ${item.field_name || "Unnamed field"}`
 
             });
 
         });
 
-
-    observations.slice(0, 3)
+    farmers.slice(0, 5)
         .forEach(item => {
 
             activities.push({
@@ -1425,21 +1513,44 @@ function renderRecentActivity() {
                 date:
                     item.created_at,
 
+                icon:
+                    "👨‍🌾",
+
                 text:
-                    `Crop observation: ${item.crop_name}`
+                    `Farmer added: ${item.farmer_code || "New farmer"}`
 
             });
 
         });
 
-
-    diaryEntries.slice(0, 3)
+    observations.slice(0, 5)
         .forEach(item => {
 
             activities.push({
 
                 date:
                     item.created_at,
+
+                icon:
+                    "🔬",
+
+                text:
+                    `Crop observation: ${item.crop_name || "Crop"}`
+
+            });
+
+        });
+
+    diaryEntries.slice(0, 5)
+        .forEach(item => {
+
+            activities.push({
+
+                date:
+                    item.created_at,
+
+                icon:
+                    "📔",
 
                 text:
                     `Diary entry: ${item.field_code || "Field visit"}`
@@ -1448,51 +1559,43 @@ function renderRecentActivity() {
 
         });
 
-
     activities.sort(
         (a, b) =>
             new Date(b.date) -
             new Date(a.date)
     );
 
-
     if (!activities.length) {
 
         container.innerHTML = `
             <div class="empty">
-                No activity yet.
+                📊 No research activity yet.
             </div>
         `;
 
         return;
     }
 
-
     container.innerHTML =
         activities
-            .slice(0, 6)
+            .slice(0, 8)
             .map(item => `
 
-                <div
-                    style="
-                        padding:10px 0;
-                        border-bottom:1px solid var(--border);
-                        font-size:13px;
-                    "
-                >
+                <div class="activity-item">
 
-                    <strong>
-                        ${escapeHtml(item.text)}
-                    </strong>
+                    <div class="activity-icon">
+                        ${item.icon}
+                    </div>
 
-                    <div
-                        style="
-                            color:var(--muted);
-                            margin-top:4px;
-                        "
-                    >
+                    <div class="activity-content">
 
-                        ${formatDateTime(item.date)}
+                        <strong>
+                            ${escapeHtml(item.text)}
+                        </strong>
+
+                        <span>
+                            ${formatDateTime(item.date)}
+                        </span>
 
                     </div>
 
@@ -1503,6 +1606,98 @@ function renderRecentActivity() {
 
 }
 
+// ======================================================
+// RESEARCH INSIGHTS
+// ======================================================
+
+function renderResearchInsights() {
+
+    const container =
+        document.getElementById("researchInsights");
+
+    if (!container) return;
+
+    const totalArea =
+        fields.reduce(
+            (sum, field) =>
+                sum +
+                (Number(field.area) || 0),
+            0
+        );
+
+    const totalYield =
+        fields.reduce(
+            (sum, field) =>
+                sum +
+                (Number(field.yield_value) || 0),
+            0
+        );
+
+    const uniqueCrops =
+        new Set(
+            fields
+                .map(field =>
+                    field.crop?.trim()
+                )
+                .filter(Boolean)
+        ).size;
+
+    const latestObservation =
+        observations[0];
+
+    container.innerHTML = `
+
+        <div class="insight-item">
+
+            <span>🌾 Total Recorded Area</span>
+
+            <strong>
+                ${formatNumber(totalArea)}
+            </strong>
+
+        </div>
+
+        <div class="insight-item">
+
+            <span>🌱 Crop Diversity</span>
+
+            <strong>
+                ${uniqueCrops}
+                crop${uniqueCrops === 1 ? "" : "s"}
+            </strong>
+
+        </div>
+
+        <div class="insight-item">
+
+            <span>📦 Recorded Yield</span>
+
+            <strong>
+                ${formatNumber(totalYield)}
+            </strong>
+
+        </div>
+
+        <div class="insight-item">
+
+            <span>🔬 Latest Observation</span>
+
+            <strong>
+                ${
+                    latestObservation
+                    ? escapeHtml(
+                        latestObservation.crop_name ||
+                        "Recorded"
+                    )
+                    : "None"
+                }
+            </strong>
+
+        </div>
+
+    `;
+
+}
 
 // ======================================================
 // DELETE FIELD
@@ -1514,7 +1709,6 @@ async function deleteField(id) {
         "Delete this field record?"
     )) return;
 
-
     const {
         error
     } = await supabaseClient
@@ -1523,7 +1717,6 @@ async function deleteField(id) {
         .eq("id", id)
         .eq("user_id", currentUser.id);
 
-
     if (error) {
 
         alert(error.message);
@@ -1531,11 +1724,14 @@ async function deleteField(id) {
         return;
     }
 
+    showToast(
+        "Field record deleted.",
+        "success"
+    );
 
     await loadAllData();
 
 }
-
 
 // ======================================================
 // DELETE FARMER
@@ -1547,7 +1743,6 @@ async function deleteFarmer(id) {
         "Delete this farmer record?"
     )) return;
 
-
     const {
         error
     } = await supabaseClient
@@ -1556,7 +1751,6 @@ async function deleteFarmer(id) {
         .eq("id", id)
         .eq("user_id", currentUser.id);
 
-
     if (error) {
 
         alert(error.message);
@@ -1564,11 +1758,14 @@ async function deleteFarmer(id) {
         return;
     }
 
+    showToast(
+        "Farmer record deleted.",
+        "success"
+    );
 
     await loadAllData();
 
 }
-
 
 // ======================================================
 // DELETE HEALTH OBSERVATION
@@ -1580,7 +1777,6 @@ async function deleteObservation(id) {
         "Delete this health observation?"
     )) return;
 
-
     const {
         error
     } = await supabaseClient
@@ -1589,7 +1785,6 @@ async function deleteObservation(id) {
         .eq("id", id)
         .eq("user_id", currentUser.id);
 
-
     if (error) {
 
         alert(error.message);
@@ -1597,11 +1792,14 @@ async function deleteObservation(id) {
         return;
     }
 
+    showToast(
+        "Observation deleted.",
+        "success"
+    );
 
     await loadAllData();
 
 }
-
 
 // ======================================================
 // DELETE DIARY
@@ -1613,7 +1811,6 @@ async function deleteDiary(id) {
         "Delete this diary entry?"
     )) return;
 
-
     const {
         error
     } = await supabaseClient
@@ -1622,7 +1819,6 @@ async function deleteDiary(id) {
         .eq("id", id)
         .eq("user_id", currentUser.id);
 
-
     if (error) {
 
         alert(error.message);
@@ -1630,11 +1826,14 @@ async function deleteDiary(id) {
         return;
     }
 
+    showToast(
+        "Diary entry deleted.",
+        "success"
+    );
 
     await loadAllData();
 
 }
-
 
 // ======================================================
 // DELETE EVERYTHING
@@ -1644,15 +1843,12 @@ async function deleteAllData() {
 
     if (!currentUser) return;
 
-
     const confirmed =
         confirm(
             "WARNING!\n\nThis will permanently delete ALL your research data.\n\nContinue?"
         );
 
-
     if (!confirmed) return;
-
 
     const tables = [
 
@@ -1664,7 +1860,6 @@ async function deleteAllData() {
 
     ];
 
-
     for (const table of tables) {
 
         const {
@@ -1673,7 +1868,6 @@ async function deleteAllData() {
             .from(table)
             .delete()
             .eq("user_id", currentUser.id);
-
 
         if (error) {
 
@@ -1686,15 +1880,14 @@ async function deleteAllData() {
 
     }
 
-
     await loadAllData();
 
-    alert(
-        "All research data has been deleted."
+    showToast(
+        "All research data has been deleted.",
+        "success"
     );
 
 }
-
 
 // ======================================================
 // BACKUP EXPORT
@@ -1720,7 +1913,6 @@ async function exportBackup() {
 
     };
 
-
     const blob =
         new Blob(
             [
@@ -1736,27 +1928,32 @@ async function exportBackup() {
             }
         );
 
-
     const url =
         URL.createObjectURL(blob);
-
 
     const a =
         document.createElement("a");
 
-
-    a.href = url;
+    a.href =
+        url;
 
     a.download =
         `nayakhap-research-backup-${today()}.json`;
 
+    document.body.appendChild(a);
+
     a.click();
 
+    a.remove();
 
     URL.revokeObjectURL(url);
 
-}
+    showToast(
+        "☁️ Research backup downloaded.",
+        "success"
+    );
 
+}
 
 // ======================================================
 // RESTORE BACKUP
@@ -1767,9 +1964,7 @@ async function restoreBackup(event) {
     const file =
         event.target.files[0];
 
-
     if (!file) return;
-
 
     try {
 
@@ -1779,11 +1974,20 @@ async function restoreBackup(event) {
         const backup =
             JSON.parse(text);
 
+        if (
+            !backup ||
+            typeof backup !== "object"
+        ) {
+
+            throw new Error(
+                "Invalid backup"
+            );
+
+        }
 
         alert(
             "Backup file read successfully.\n\nFor safety, restore is not automatic yet. Your current cloud data has NOT been changed."
         );
-
 
     } catch (error) {
 
@@ -1793,11 +1997,9 @@ async function restoreBackup(event) {
 
     }
 
-
     event.target.value = "";
 
 }
-
 
 // ======================================================
 // MODALS
@@ -1805,23 +2007,241 @@ async function restoreBackup(event) {
 
 function openModal(id) {
 
-    document
-        .getElementById(id)
-        .classList
-        .add("open");
+    const modal =
+        document.getElementById(id);
+
+    if (!modal) return;
+
+    modal.classList.add("open");
 
 }
-
 
 function closeModal(id) {
 
-    document
-        .getElementById(id)
-        .classList
-        .remove("open");
+    const modal =
+        document.getElementById(id);
+
+    if (!modal) return;
+
+    modal.classList.remove("open");
 
 }
 
+// ======================================================
+// DASHBOARD EFFECTS
+// ======================================================
+
+function setupDashboardEffects() {
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Escape") {
+
+                document
+                    .querySelectorAll(".modal.open")
+                    .forEach(modal => {
+
+                        modal.classList.remove("open");
+
+                    });
+
+            }
+
+        }
+    );
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const modal =
+                event.target.closest(".modal");
+
+            if (
+                modal &&
+                event.target === modal
+            ) {
+
+                modal.classList.remove("open");
+
+            }
+
+        }
+    );
+
+}
+
+// ======================================================
+// GREETING
+// ======================================================
+
+function updateGreeting() {
+
+    const element =
+        document.getElementById("welcomeTitle");
+
+    if (!element) return;
+
+    const hour =
+        new Date().getHours();
+
+    let greeting =
+        "Welcome back";
+
+    if (hour < 12) {
+
+        greeting =
+            "Good morning";
+
+    } else if (hour < 17) {
+
+        greeting =
+            "Good afternoon";
+
+    } else {
+
+        greeting =
+            "Good evening";
+
+    }
+
+    const email =
+        currentUser?.email || "";
+
+    const name =
+        email
+            .split("@")[0]
+            .replace(/[._-]/g, " ");
+
+    const displayName =
+        name
+            ? capitalizeWords(name)
+            : "Researcher";
+
+    element.textContent =
+        `${greeting}, ${displayName} 🌱`;
+
+}
+
+// ======================================================
+// CONNECTION STATUS
+// ======================================================
+
+function updateConnectionStatus() {
+
+    const status =
+        document.querySelector(".status");
+
+    if (!status) return;
+
+    status.innerHTML = `
+        <span class="status-dot"></span>
+        Cloud Synced
+    `;
+
+}
+
+// ======================================================
+// TOAST NOTIFICATION
+// ======================================================
+
+function showToast(
+    message,
+    type = "success"
+) {
+
+    let container =
+        document.getElementById(
+            "toastContainer"
+        );
+
+    if (!container) {
+
+        container =
+            document.createElement("div");
+
+        container.id =
+            "toastContainer";
+
+        container.style.position =
+            "fixed";
+
+        container.style.right =
+            "22px";
+
+        container.style.bottom =
+            "22px";
+
+        container.style.zIndex =
+            "9999";
+
+        container.style.display =
+            "flex";
+
+        container.style.flexDirection =
+            "column";
+
+        container.style.gap =
+            "10px";
+
+        document.body.appendChild(
+            container
+        );
+
+    }
+
+    const toast =
+        document.createElement("div");
+
+    toast.textContent =
+        message;
+
+    toast.style.padding =
+        "13px 18px";
+
+    toast.style.borderRadius =
+        "12px";
+
+    toast.style.background =
+        type === "error"
+            ? "#c0392b"
+            : "#185b31";
+
+    toast.style.color =
+        "white";
+
+    toast.style.fontSize =
+        "13px";
+
+    toast.style.fontWeight =
+        "600";
+
+    toast.style.boxShadow =
+        "0 12px 30px rgba(0,0,0,.18)";
+
+    toast.style.animation =
+        "toastIn .35s ease";
+
+    container.appendChild(
+        toast
+    );
+
+    setTimeout(() => {
+
+        toast.style.animation =
+            "toastOut .3s ease";
+
+        setTimeout(() => {
+
+            toast.remove();
+
+        }, 300);
+
+    }, 2600);
+
+}
 
 // ======================================================
 // HELPERS
@@ -1835,7 +2255,6 @@ function today() {
 
 }
 
-
 function parseNumber(value) {
 
     if (
@@ -1848,10 +2267,8 @@ function parseNumber(value) {
 
     }
 
-
     const number =
         Number(value);
-
 
     return Number.isFinite(number)
         ? number
@@ -1859,22 +2276,34 @@ function parseNumber(value) {
 
 }
 
+function formatNumber(value) {
+
+    return Number(value || 0)
+        .toLocaleString(
+            "en-IN",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+
+}
 
 function formatDate(value) {
 
     if (!value) return "-";
 
-
     const date =
         new Date(value);
 
-
-    if (Number.isNaN(date.getTime())) {
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
 
         return value;
 
     }
-
 
     return date.toLocaleDateString(
         "en-IN",
@@ -1887,22 +2316,22 @@ function formatDate(value) {
 
 }
 
-
 function formatDateTime(value) {
 
     if (!value) return "-";
 
-
     const date =
         new Date(value);
 
-
-    if (Number.isNaN(date.getTime())) {
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
 
         return "-";
 
     }
-
 
     return date.toLocaleString(
         "en-IN",
@@ -1917,7 +2346,6 @@ function formatDateTime(value) {
 
 }
 
-
 function escapeHtml(value) {
 
     if (
@@ -1929,16 +2357,43 @@ function escapeHtml(value) {
 
     }
 
-
     return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
+function capitalizeWords(value) {
+
+    return value
+        .split(" ")
+        .filter(Boolean)
+        .map(
+            word =>
+                word.charAt(0).toUpperCase() +
+                word.slice(1)
+        )
+        .join(" ");
+
+}
 
 // ======================================================
 // AUTH UI HELPERS
@@ -1947,26 +2402,32 @@ function escapeHtml(value) {
 function setAuthLoading(loading) {
 
     const button =
-        document.getElementById("authSubmit");
+        document.getElementById(
+            "authSubmit"
+        );
 
+    if (!button) return;
 
     if (loading) {
 
-        button.disabled = true;
+        button.disabled =
+            true;
 
         button.textContent =
             "Please wait...";
 
     } else {
 
-        button.disabled = false;
+        button.disabled =
+            false;
 
         const signup =
             document
-                .getElementById("signupTab")
-                .classList
+                .getElementById(
+                    "signupTab"
+                )
+                ?.classList
                 .contains("active");
-
 
         button.textContent =
             signup
@@ -1977,15 +2438,17 @@ function setAuthLoading(loading) {
 
 }
 
-
 function showAuthMessage(
     message,
     type = ""
 ) {
 
     const box =
-        document.getElementById("authMessage");
+        document.getElementById(
+            "authMessage"
+        );
 
+    if (!box) return;
 
     box.textContent =
         message;
@@ -1995,12 +2458,14 @@ function showAuthMessage(
 
 }
 
-
 function clearAuthMessage() {
 
     const box =
-        document.getElementById("authMessage");
+        document.getElementById(
+            "authMessage"
+        );
 
+    if (!box) return;
 
     box.textContent =
         "";
@@ -2009,3 +2474,416 @@ function clearAuthMessage() {
         "auth-message";
 
 }
+
+// ======================================================
+// EXTRA DASHBOARD ANIMATION CSS
+// ======================================================
+
+(function injectDashboardStyles() {
+
+    if (
+        document.getElementById(
+            "dashboardAnimationStyles"
+        )
+    ) return;
+
+    const style =
+        document.createElement("style");
+
+    style.id =
+        "dashboardAnimationStyles";
+
+    style.textContent = `
+
+        .page-enter {
+            animation:
+                dashboardPageIn
+                .4s
+                ease
+                both;
+        }
+
+        @keyframes dashboardPageIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateY(0);
+            }
+
+        }
+
+        .table-row-animated {
+            animation:
+                rowIn
+                .35s
+                ease
+                both;
+        }
+
+        @keyframes rowIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateX(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateX(0);
+            }
+
+        }
+
+        .animated-card {
+            animation:
+                cardIn
+                .45s
+                ease
+                both;
+        }
+
+        @keyframes cardIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateY(12px)
+                    scale(.98);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateY(0)
+                    scale(1);
+            }
+
+        }
+
+        .crop-stat {
+            margin-bottom: 14px;
+            animation:
+                cropIn
+                .45s
+                ease
+                both;
+        }
+
+        .crop-stat-top {
+            display:
+                flex;
+            justify-content:
+                space-between;
+            align-items:
+                center;
+            gap:
+                10px;
+            font-size:
+                13px;
+            margin-bottom:
+                7px;
+        }
+
+        .crop-stat-top small {
+            color:
+                var(--muted);
+            font-weight:
+                400;
+        }
+
+        .crop-progress {
+            width:
+                100%;
+            height:
+                7px;
+            background:
+                var(--green-light);
+            border-radius:
+                20px;
+            overflow:
+                hidden;
+        }
+
+        .crop-progress-fill {
+            height:
+                100%;
+            background:
+                linear-gradient(
+                    90deg,
+                    #185b31,
+                    #45b96c
+                );
+            border-radius:
+                20px;
+            animation:
+                progressGrow
+                1s
+                cubic-bezier(
+                    .22,
+                    1,
+                    .36,
+                    1
+                );
+        }
+
+        @keyframes progressGrow {
+
+            from {
+                width: 0 !important;
+            }
+
+        }
+
+        @keyframes cropIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateX(0);
+            }
+
+        }
+
+        .activity-item {
+            display:
+                flex;
+            gap:
+                12px;
+            align-items:
+                center;
+            padding:
+                12px 0;
+            border-bottom:
+                1px solid var(--border);
+            animation:
+                activityIn
+                .4s
+                ease
+                both;
+        }
+
+        .activity-icon {
+            width:
+                38px;
+            height:
+                38px;
+            min-width:
+                38px;
+            border-radius:
+                11px;
+            background:
+                var(--green-light);
+            display:
+                flex;
+            align-items:
+                center;
+            justify-content:
+                center;
+            font-size:
+                18px;
+        }
+
+        .activity-content {
+            display:
+                flex;
+            flex-direction:
+                column;
+            gap:
+                3px;
+            min-width:
+                0;
+        }
+
+        .activity-content strong {
+            font-size:
+                13px;
+            font-weight:
+                600;
+        }
+
+        .activity-content span {
+            color:
+                var(--muted);
+            font-size:
+                11px;
+        }
+
+        .insight-item {
+            display:
+                flex;
+            justify-content:
+                space-between;
+            align-items:
+                center;
+            padding:
+                13px 0;
+            border-bottom:
+                1px solid var(--border);
+            gap:
+                15px;
+        }
+
+        .insight-item span {
+            color:
+                var(--muted);
+            font-size:
+                13px;
+        }
+
+        .insight-item strong {
+            font-size:
+                14px;
+        }
+
+        #fieldCount,
+        #farmerCount,
+        #healthCount,
+        #diaryCount {
+            transition:
+                transform
+                .2s
+                ease;
+        }
+
+        .stat-card:hover {
+            transform:
+                translateY(-4px);
+            box-shadow:
+                0 12px 30px
+                rgba(
+                    24,
+                    91,
+                    49,
+                    .08
+                );
+        }
+
+        .stat-card {
+            transition:
+                transform
+                .25s
+                ease,
+                box-shadow
+                .25s
+                ease;
+        }
+
+        .card,
+        .backup-card,
+        .diary-card {
+            transition:
+                transform
+                .25s
+                ease,
+                box-shadow
+                .25s
+                ease;
+        }
+
+        .card:hover,
+        .backup-card:hover,
+        .diary-card:hover {
+            transform:
+                translateY(-3px);
+            box-shadow:
+                0 12px 28px
+                rgba(
+                    23,
+                    35,
+                    26,
+                    .07
+                );
+        }
+
+        @keyframes activityIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateY(0);
+            }
+
+        }
+
+        @keyframes toastIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateY(15px)
+                    scale(.95);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateY(0)
+                    scale(1);
+            }
+
+        }
+
+        @keyframes toastOut {
+
+            from {
+                opacity: 1;
+                transform:
+                    translateY(0)
+                    scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform:
+                    translateY(10px)
+                    scale(.96);
+            }
+
+        }
+
+        @media (
+            prefers-reduced-motion:
+            reduce
+        ) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration:
+                    .01ms !important;
+                animation-iteration-count:
+                    1 !important;
+                transition-duration:
+                    .01ms !important;
+            }
+
+        }
+
+    `;
+
+    document.head.appendChild(
+        style
+    );
+
+})();
