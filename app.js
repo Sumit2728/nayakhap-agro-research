@@ -1,20 +1,21 @@
 // ======================================================
 // NAYAKHAP AGRO RESEARCH
 // SUPABASE CLOUD VERSION
-// COMPLETE APP.JS
+// FARMER CODE LINKED VERSION
 // ======================================================
 
 const SUPABASE_URL =
     "https://cuhffitgrgewewoqdhgn.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-    "sb_publishable_d9g-n2-Q3jEpW447fT-hXA_RW29I84nK";
+    "sb_publishable_d9g-n2-Q3jEpW447fT-hXA_RW29I84n";
 
 const supabaseClient =
     window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY
     );
+
 
 // ======================================================
 // GLOBAL DATA
@@ -26,6 +27,7 @@ let fields = [];
 let farmers = [];
 let observations = [];
 let diaryEntries = [];
+
 
 // ======================================================
 // DOM READY
@@ -41,6 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await checkAuth();
 
 });
+
 
 // ======================================================
 // AUTHENTICATION
@@ -58,6 +61,7 @@ function setupAuth() {
         document.getElementById("authForm");
 
     if (!loginTab || !signupTab || !authForm) return;
+
 
     loginTab.addEventListener("click", () => {
 
@@ -77,6 +81,7 @@ function setupAuth() {
 
     });
 
+
     signupTab.addEventListener("click", () => {
 
         signupTab.classList.add("active");
@@ -95,6 +100,7 @@ function setupAuth() {
 
     });
 
+
     authForm.addEventListener("submit", async (event) => {
 
         event.preventDefault();
@@ -111,6 +117,7 @@ function setupAuth() {
         const confirmPassword =
             document.getElementById("authConfirmPassword").value;
 
+
         if (!email || !password) {
 
             showAuthMessage(
@@ -120,6 +127,7 @@ function setupAuth() {
 
             return;
         }
+
 
         if (isSignup) {
 
@@ -133,6 +141,7 @@ function setupAuth() {
                 return;
             }
 
+
             if (password.length < 6) {
 
                 showAuthMessage(
@@ -143,21 +152,17 @@ function setupAuth() {
                 return;
             }
 
-            await signupUser(
-                email,
-                password
-            );
+
+            await signupUser(email, password);
 
         } else {
 
-            await loginUser(
-                email,
-                password
-            );
+            await loginUser(email, password);
 
         }
 
     });
+
 
     document
         .getElementById("logoutBtn")
@@ -167,6 +172,7 @@ function setupAuth() {
         );
 
 }
+
 
 // ======================================================
 // SIGN UP
@@ -193,7 +199,9 @@ async function signupUser(email, password) {
 
     });
 
+
     setAuthLoading(false);
+
 
     if (error) {
 
@@ -204,6 +212,7 @@ async function signupUser(email, password) {
 
         return;
     }
+
 
     if (data.session) {
 
@@ -227,6 +236,7 @@ async function signupUser(email, password) {
 
 }
 
+
 // ======================================================
 // LOGIN
 // ======================================================
@@ -245,7 +255,9 @@ async function loginUser(email, password) {
 
     });
 
+
     setAuthLoading(false);
+
 
     if (error) {
 
@@ -257,11 +269,13 @@ async function loginUser(email, password) {
         return;
     }
 
+
     currentUser = data.user;
 
     await showApp();
 
 }
+
 
 // ======================================================
 // LOGOUT
@@ -273,12 +287,14 @@ async function logoutUser() {
         error
     } = await supabaseClient.auth.signOut();
 
+
     if (error) {
 
         alert(error.message);
 
         return;
     }
+
 
     currentUser = null;
 
@@ -287,6 +303,7 @@ async function logoutUser() {
     observations = [];
     diaryEntries = [];
 
+
     document.getElementById("appShell").style.display =
         "none";
 
@@ -294,6 +311,7 @@ async function logoutUser() {
         "flex";
 
 }
+
 
 // ======================================================
 // CHECK AUTH
@@ -304,6 +322,7 @@ async function checkAuth() {
     const {
         data
     } = await supabaseClient.auth.getSession();
+
 
     if (data.session) {
 
@@ -322,6 +341,7 @@ async function checkAuth() {
 
     }
 
+
     supabaseClient.auth.onAuthStateChange(
         async (_event, session) => {
 
@@ -337,6 +357,7 @@ async function checkAuth() {
 
 }
 
+
 // ======================================================
 // SHOW APPLICATION
 // ======================================================
@@ -349,15 +370,10 @@ async function showApp() {
     document.getElementById("appShell").style.display =
         "flex";
 
-    const userEmail =
-        document.getElementById("userEmail");
 
-    if (userEmail) {
+    document.getElementById("userEmail").textContent =
+        currentUser?.email || "";
 
-        userEmail.textContent =
-            currentUser?.email || "";
-
-    }
 
     await loadAllData();
 
@@ -365,13 +381,15 @@ async function showApp() {
 
 }
 
+
 // ======================================================
-// LOAD ALL DATA
+// LOAD CLOUD DATA
 // ======================================================
 
 async function loadAllData() {
 
     if (!currentUser) return;
+
 
     const [
         fieldsResponse,
@@ -414,41 +432,6 @@ async function loadAllData() {
 
     ]);
 
-    if (fieldsResponse.error) {
-
-        console.error(
-            "Fields:",
-            fieldsResponse.error
-        );
-
-    }
-
-    if (farmersResponse.error) {
-
-        console.error(
-            "Farmers:",
-            farmersResponse.error
-        );
-
-    }
-
-    if (observationsResponse.error) {
-
-        console.error(
-            "Observations:",
-            observationsResponse.error
-        );
-
-    }
-
-    if (diaryResponse.error) {
-
-        console.error(
-            "Diary:",
-            diaryResponse.error
-        );
-
-    }
 
     fields =
         fieldsResponse.data || [];
@@ -462,9 +445,24 @@ async function loadAllData() {
     diaryEntries =
         diaryResponse.data || [];
 
+
+    if (fieldsResponse.error)
+        console.error("Fields:", fieldsResponse.error);
+
+    if (farmersResponse.error)
+        console.error("Farmers:", farmersResponse.error);
+
+    if (observationsResponse.error)
+        console.error("Observations:", observationsResponse.error);
+
+    if (diaryResponse.error)
+        console.error("Diary:", diaryResponse.error);
+
+
     renderAll();
 
 }
+
 
 // ======================================================
 // NAVIGATION
@@ -474,6 +472,7 @@ function setupNavigation() {
 
     const buttons =
         document.querySelectorAll(".nav-btn");
+
 
     buttons.forEach(button => {
 
@@ -491,6 +490,7 @@ function setupNavigation() {
 
     });
 
+
     document
         .getElementById("mobileMenu")
         ?.addEventListener(
@@ -507,6 +507,7 @@ function setupNavigation() {
 
 }
 
+
 function showPage(page) {
 
     document
@@ -517,14 +518,17 @@ function showPage(page) {
 
         });
 
+
     const target =
         document.getElementById(page);
+
 
     if (target) {
 
         target.classList.add("active");
 
     }
+
 
     document
         .querySelectorAll(".nav-btn")
@@ -536,6 +540,7 @@ function showPage(page) {
             );
 
         });
+
 
     const titles = {
 
@@ -559,16 +564,10 @@ function showPage(page) {
 
     };
 
-    const pageTitle =
-        document.getElementById("pageTitle");
 
-    if (pageTitle) {
+    document.getElementById("pageTitle").textContent =
+        titles[page] || "Research Dashboard";
 
-        pageTitle.textContent =
-            titles[page] ||
-            "Research Dashboard";
-
-    }
 
     document
         .querySelector(".sidebar")
@@ -576,6 +575,7 @@ function showPage(page) {
         .remove("open");
 
 }
+
 
 // ======================================================
 // FORMS
@@ -590,12 +590,14 @@ function setupForms() {
             saveField
         );
 
+
     document
         .getElementById("farmerForm")
         ?.addEventListener(
             "submit",
             saveFarmer
         );
+
 
     document
         .getElementById("healthForm")
@@ -604,6 +606,7 @@ function setupForms() {
             saveHealthObservation
         );
 
+
     document
         .getElementById("diaryForm")
         ?.addEventListener(
@@ -611,11 +614,13 @@ function setupForms() {
             saveDiaryEntry
         );
 
+
     const healthDate =
         document.getElementById("healthDate");
 
     const diaryDate =
         document.getElementById("diaryDate");
+
 
     if (healthDate)
         healthDate.value = today();
@@ -625,6 +630,7 @@ function setupForms() {
 
 }
 
+
 // ======================================================
 // SAVE FIELD
 // ======================================================
@@ -633,6 +639,7 @@ async function saveField(event) {
 
     event.preventDefault();
 
+
     if (!currentUser) {
 
         alert("Please login first.");
@@ -640,73 +647,68 @@ async function saveField(event) {
         return;
     }
 
+
+    const farmerCode =
+        document.getElementById("fieldFarmerCode")?.value.trim() || "";
+
+
     const record = {
 
         field_name:
-            document
-                .getElementById("fieldId")
-                .value
-                .trim(),
+            document.getElementById("fieldId").value.trim(),
 
         crop:
-            document
-                .getElementById("fieldCrop")
-                .value
-                .trim(),
+            document.getElementById("fieldCrop").value.trim(),
 
         variety:
-            document
-                .getElementById("fieldVariety")
-                .value
-                .trim(),
+            document.getElementById("fieldVariety").value.trim(),
 
         sowing_date:
-            document
-                .getElementById("fieldDate")
-                .value ||
-            null,
+            document.getElementById("fieldDate").value || null,
 
         irrigation_source:
-            document
-                .getElementById("fieldWater")
-                .value,
+            document.getElementById("fieldWater").value,
 
         area:
             parseNumber(
-                document
-                    .getElementById("fieldSize")
-                    .value
+                document.getElementById("fieldSize").value
             ),
 
         fertilizer:
-            document
-                .getElementById("fieldFertilizer")
-                .value
-                .trim(),
+            document.getElementById("fieldFertilizer").value.trim(),
 
         yield_value:
             parseNumber(
-                document
-                    .getElementById("fieldYield")
-                    .value
+                document.getElementById("fieldYield").value
             ),
 
         notes:
-            document
-                .getElementById("fieldNotes")
-                .value
-                .trim(),
+            document.getElementById("fieldNotes").value.trim(),
 
         user_id:
             currentUser.id
 
     };
 
+
+    // Farmer Code ko notes ke andar bhi safe link ke liye store karenge
+    if (farmerCode) {
+
+        record.notes =
+            `Farmer Code: ${farmerCode}` +
+            (record.notes
+                ? ` | ${record.notes}`
+                : "");
+
+    }
+
+
     const {
         error
     } = await supabaseClient
         .from("fields")
         .insert(record);
+
 
     if (error) {
 
@@ -718,6 +720,7 @@ async function saveField(event) {
         return;
     }
 
+
     closeModal("fieldModal");
 
     event.target.reset();
@@ -725,6 +728,7 @@ async function saveField(event) {
     await loadAllData();
 
 }
+
 
 // ======================================================
 // SAVE FARMER
@@ -734,6 +738,7 @@ async function saveFarmer(event) {
 
     event.preventDefault();
 
+
     if (!currentUser) {
 
         alert("Please login first.");
@@ -741,36 +746,29 @@ async function saveFarmer(event) {
         return;
     }
 
+
     const farmerCode =
-        document
-            .getElementById("farmerCode")
-            .value
-            .trim()
-            .toUpperCase();
+        document.getElementById("farmerCode").value.trim();
 
-    if (!farmerCode) {
 
-        alert("Farmer Code is required.");
-
-        return;
-    }
-
-    // Prevent duplicate farmer codes
-    const existingFarmer =
+    const existing =
         farmers.find(
             farmer =>
-                String(farmer.farmer_code || "")
-                    .toUpperCase() === farmerCode
+                String(farmer.farmer_code)
+                    .toLowerCase() ===
+                farmerCode.toLowerCase()
         );
 
-    if (existingFarmer) {
+
+    if (existing) {
 
         alert(
-            "This Farmer Code already exists.\n\nUse the existing code for this farmer's related records."
+            `Farmer Code "${farmerCode}" already exists.`
         );
 
         return;
     }
+
 
     const record = {
 
@@ -778,48 +776,34 @@ async function saveFarmer(event) {
             farmerCode,
 
         main_crop:
-            document
-                .getElementById("farmerCrop")
-                .value
-                .trim(),
+            document.getElementById("farmerCrop").value.trim(),
 
         seed_source:
-            document
-                .getElementById("seedSource")
-                .value
-                .trim(),
+            document.getElementById("seedSource").value.trim(),
 
         farming_method:
-            document
-                .getElementById("farmerWater")
-                .value,
+            document.getElementById("farmerWater").value,
 
         notes:
             [
-                document
-                    .getElementById("farmerProblem")
-                    .value
-                    .trim(),
-
-                document
-                    .getElementById("farmerObservation")
-                    .value
-                    .trim()
-
+                document.getElementById("farmerProblem").value.trim(),
+                document.getElementById("farmerObservation").value.trim()
             ]
-            .filter(Boolean)
-            .join(" | "),
+                .filter(Boolean)
+                .join(" | "),
 
         user_id:
             currentUser.id
 
     };
 
+
     const {
         error
     } = await supabaseClient
         .from("farmers")
         .insert(record);
+
 
     if (error) {
 
@@ -831,6 +815,7 @@ async function saveFarmer(event) {
         return;
     }
 
+
     closeModal("farmerModal");
 
     event.target.reset();
@@ -838,6 +823,7 @@ async function saveFarmer(event) {
     await loadAllData();
 
 }
+
 
 // ======================================================
 // SAVE CROP HEALTH
@@ -847,61 +833,61 @@ async function saveHealthObservation(event) {
 
     event.preventDefault();
 
+
     if (!currentUser) return;
+
+
+    const farmerCode =
+        document.getElementById("healthFarmerCode")?.value.trim() || "";
+
 
     const record = {
 
         observation_date:
-            document
-                .getElementById("healthDate")
-                .value,
+            document.getElementById("healthDate").value,
 
         field_code:
-            document
-                .getElementById("healthField")
-                .value
-                .trim(),
+            document.getElementById("healthField").value.trim(),
 
         crop_name:
-            document
-                .getElementById("healthCrop")
-                .value
-                .trim() ||
+            document.getElementById("healthCrop").value.trim() ||
             "Not specified",
 
         disease_symptoms:
-            document
-                .getElementById("healthSymptoms")
-                .value
-                .trim(),
+            document.getElementById("healthSymptoms").value.trim(),
 
         crop_stage:
-            document
-                .getElementById("healthIdentification")
-                .value
-                .trim(),
+            document.getElementById("healthIdentification").value.trim(),
 
         treatment:
-            document
-                .getElementById("healthTreatment")
-                .value
-                .trim(),
+            document.getElementById("healthTreatment").value.trim(),
 
         pest_observation:
-            document
-                .getElementById("healthSeverity")
-                .value,
+            document.getElementById("healthSeverity").value,
 
         user_id:
             currentUser.id
 
     };
 
+
+    if (farmerCode) {
+
+        record.treatment =
+            `Farmer Code: ${farmerCode}` +
+            (record.treatment
+                ? ` | ${record.treatment}`
+                : "");
+
+    }
+
+
     const {
         error
     } = await supabaseClient
         .from("crop_observations")
         .insert(record);
+
 
     if (error) {
 
@@ -912,6 +898,7 @@ async function saveHealthObservation(event) {
 
         return;
     }
+
 
     closeModal("healthModal");
 
@@ -924,6 +911,7 @@ async function saveHealthObservation(event) {
 
 }
 
+
 // ======================================================
 // SAVE DIARY
 // ======================================================
@@ -932,46 +920,54 @@ async function saveDiaryEntry(event) {
 
     event.preventDefault();
 
+
     if (!currentUser) return;
+
+
+    const farmerCode =
+        document.getElementById("diaryFarmerCode")?.value.trim() || "";
+
 
     const record = {
 
         entry_date:
-            document
-                .getElementById("diaryDate")
-                .value,
+            document.getElementById("diaryDate").value,
 
         field_code:
-            document
-                .getElementById("diaryField")
-                .value
-                .trim(),
+            document.getElementById("diaryField").value.trim(),
 
         activity:
             "Field observation",
 
         observation:
-            document
-                .getElementById("diaryObservation")
-                .value
-                .trim(),
+            document.getElementById("diaryObservation").value.trim(),
 
         weather_condition:
-            document
-                .getElementById("diaryWeather")
-                .value
-                .trim(),
+            document.getElementById("diaryWeather").value.trim(),
 
         user_id:
             currentUser.id
 
     };
 
+
+    if (farmerCode) {
+
+        record.observation =
+            `Farmer Code: ${farmerCode}` +
+            (record.observation
+                ? ` | ${record.observation}`
+                : "");
+
+    }
+
+
     const {
         error
     } = await supabaseClient
         .from("field_diary")
         .insert(record);
+
 
     if (error) {
 
@@ -982,6 +978,7 @@ async function saveDiaryEntry(event) {
 
         return;
     }
+
 
     closeModal("diaryModal");
 
@@ -994,6 +991,7 @@ async function saveDiaryEntry(event) {
 
 }
 
+
 // ======================================================
 // SEARCH
 // ======================================================
@@ -1003,6 +1001,7 @@ function setupSearch() {
     const search =
         document.getElementById("fieldSearch");
 
+
     search?.addEventListener(
         "input",
         renderFields
@@ -1010,8 +1009,9 @@ function setupSearch() {
 
 }
 
+
 // ======================================================
-// RENDER ALL
+// RENDER EVERYTHING
 // ======================================================
 
 function renderAll() {
@@ -1028,6 +1028,7 @@ function renderAll() {
 
 }
 
+
 // ======================================================
 // FIELD TABLE
 // ======================================================
@@ -1039,14 +1040,14 @@ function renderFields() {
 
     if (!tbody) return;
 
+
     const search =
         (
-            document
-                .getElementById("fieldSearch")
-                ?.value ||
-            ""
+            document.getElementById("fieldSearch")
+                ?.value || ""
         )
-        .toLowerCase();
+            .toLowerCase();
+
 
     const filtered =
         fields.filter(field => {
@@ -1055,16 +1056,19 @@ function renderFields() {
 
                 field.field_name,
                 field.crop,
-                field.variety
+                field.variety,
+                field.notes
 
             ]
                 .filter(Boolean)
                 .join(" ")
                 .toLowerCase();
 
+
             return text.includes(search);
 
         });
+
 
     if (!filtered.length) {
 
@@ -1078,6 +1082,7 @@ function renderFields() {
 
         return;
     }
+
 
     tbody.innerHTML =
         filtered
@@ -1135,6 +1140,7 @@ function renderFields() {
 
 }
 
+
 // ======================================================
 // FARMER TABLE
 // ======================================================
@@ -1145,6 +1151,7 @@ function renderFarmers() {
         document.getElementById("farmerTable");
 
     if (!tbody) return;
+
 
     if (!farmers.length) {
 
@@ -1159,69 +1166,59 @@ function renderFarmers() {
         return;
     }
 
+
     tbody.innerHTML =
         farmers
-            .map(farmer => {
+            .map(farmer => `
 
-                const linkedFields =
-                    fields.filter(field =>
-                        String(
-                            field.farmer_code || ""
-                        ).toUpperCase() ===
-                        String(
-                            farmer.farmer_code || ""
-                        ).toUpperCase()
-                    ).length;
+                <tr>
 
-                return `
+                    <td>
 
-                    <tr>
-
-                        <td>
-                            <strong>
-                                ${escapeHtml(
-                                    farmer.farmer_code || "-"
-                                )}
-                            </strong>
-                        </td>
-
-                        <td>
+                        <strong>
                             ${escapeHtml(
-                                farmer.main_crop || "-"
+                                farmer.farmer_code || "-"
                             )}
-                        </td>
+                        </strong>
 
-                        <td>
-                            ${escapeHtml(
-                                farmer.seed_source || "-"
-                            )}
-                        </td>
+                    </td>
 
-                        <td>
-                            ${escapeHtml(
-                                farmer.farming_method || "-"
-                            )}
-                        </td>
+                    <td>
+                        ${escapeHtml(
+                            farmer.main_crop || "-"
+                        )}
+                    </td>
 
-                        <td>
+                    <td>
+                        ${escapeHtml(
+                            farmer.seed_source || "-"
+                        )}
+                    </td>
 
-                            <button
-                                class="delete-btn"
-                                onclick="deleteFarmer('${farmer.id}')"
-                            >
-                                Delete
-                            </button>
+                    <td>
+                        ${escapeHtml(
+                            farmer.farming_method || "-"
+                        )}
+                    </td>
 
-                        </td>
+                    <td>
 
-                    </tr>
+                        <button
+                            class="delete-btn"
+                            onclick="deleteFarmer('${farmer.id}')"
+                        >
+                            Delete
+                        </button>
 
-                `;
+                    </td>
 
-            })
+                </tr>
+
+            `)
             .join("");
 
 }
+
 
 // ======================================================
 // HEALTH TABLE
@@ -1233,6 +1230,7 @@ function renderHealth() {
         document.getElementById("healthTable");
 
     if (!tbody) return;
+
 
     if (!observations.length) {
 
@@ -1246,6 +1244,7 @@ function renderHealth() {
 
         return;
     }
+
 
     tbody.innerHTML =
         observations
@@ -1307,6 +1306,7 @@ function renderHealth() {
 
 }
 
+
 // ======================================================
 // DIARY
 // ======================================================
@@ -1317,6 +1317,7 @@ function renderDiary() {
         document.getElementById("diaryList");
 
     if (!container) return;
+
 
     if (!diaryEntries.length) {
 
@@ -1329,6 +1330,7 @@ function renderDiary() {
         return;
     }
 
+
     container.innerHTML =
         diaryEntries
             .map(entry => `
@@ -1336,34 +1338,28 @@ function renderDiary() {
                 <div class="diary-card">
 
                     <div class="diary-date">
-
                         ${formatDate(
                             entry.entry_date
                         )}
-
                     </div>
 
                     <h3>
-
                         ${escapeHtml(
                             entry.field_code ||
                             "General Field Visit"
                         )}
-
                     </h3>
 
                     <p>
-
                         ${escapeHtml(
                             entry.observation || "-"
                         )}
-
                     </p>
 
                     ${
                         entry.weather_condition
-                        ?
-                        `
+                            ?
+                            `
                             <p style="margin-top:10px">
 
                                 <strong>
@@ -1375,9 +1371,9 @@ function renderDiary() {
                                 )}
 
                             </p>
-                        `
-                        :
-                        ""
+                            `
+                            :
+                            ""
                     }
 
                     <button
@@ -1394,6 +1390,7 @@ function renderDiary() {
             .join("");
 
 }
+
 
 // ======================================================
 // DASHBOARD
@@ -1413,27 +1410,26 @@ function updateDashboard() {
     const diaryCount =
         document.getElementById("diaryCount");
 
+
     if (fieldCount)
-        fieldCount.textContent =
-            fields.length;
+        fieldCount.textContent = fields.length;
 
     if (farmerCount)
-        farmerCount.textContent =
-            farmers.length;
+        farmerCount.textContent = farmers.length;
 
     if (healthCount)
-        healthCount.textContent =
-            observations.length;
+        healthCount.textContent = observations.length;
 
     if (diaryCount)
-        diaryCount.textContent =
-            diaryEntries.length;
+        diaryCount.textContent = diaryEntries.length;
+
 
     renderCropDistribution();
 
     renderRecentActivity();
 
 }
+
 
 // ======================================================
 // CROP DISTRIBUTION
@@ -1442,11 +1438,10 @@ function updateDashboard() {
 function renderCropDistribution() {
 
     const container =
-        document.getElementById(
-            "cropDistribution"
-        );
+        document.getElementById("cropDistribution");
 
     if (!container) return;
+
 
     if (!fields.length) {
 
@@ -1459,18 +1454,20 @@ function renderCropDistribution() {
         return;
     }
 
+
     const counts = {};
+
 
     fields.forEach(field => {
 
         const crop =
-            field.crop ||
-            "Unknown";
+            field.crop || "Unknown";
 
         counts[crop] =
             (counts[crop] || 0) + 1;
 
     });
+
 
     container.innerHTML =
         Object.entries(counts)
@@ -1486,8 +1483,7 @@ function renderCropDistribution() {
                 >
 
                     <span>
-                        🌱
-                        ${escapeHtml(crop)}
+                        🌱 ${escapeHtml(crop)}
                     </span>
 
                     <strong>
@@ -1501,6 +1497,7 @@ function renderCropDistribution() {
 
 }
 
+
 // ======================================================
 // RECENT ACTIVITY
 // ======================================================
@@ -1508,16 +1505,15 @@ function renderCropDistribution() {
 function renderRecentActivity() {
 
     const container =
-        document.getElementById(
-            "recentActivity"
-        );
+        document.getElementById("recentActivity");
 
     if (!container) return;
 
+
     const activities = [];
 
-    fields
-        .slice(0, 3)
+
+    fields.slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1526,16 +1522,14 @@ function renderRecentActivity() {
                     item.created_at,
 
                 text:
-                    `Field added: ${
-                        item.field_name || "-"
-                    }`
+                    `Field added: ${item.field_name}`
 
             });
 
         });
 
-    farmers
-        .slice(0, 3)
+
+    observations.slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1544,34 +1538,14 @@ function renderRecentActivity() {
                     item.created_at,
 
                 text:
-                    `Farmer added: ${
-                        item.farmer_code || "-"
-                    }`
+                    `Crop observation: ${item.crop_name}`
 
             });
 
         });
 
-    observations
-        .slice(0, 3)
-        .forEach(item => {
 
-            activities.push({
-
-                date:
-                    item.created_at,
-
-                text:
-                    `Crop observation: ${
-                        item.crop_name || "-"
-                    }`
-
-            });
-
-        });
-
-    diaryEntries
-        .slice(0, 3)
+    diaryEntries.slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1589,11 +1563,13 @@ function renderRecentActivity() {
 
         });
 
+
     activities.sort(
         (a, b) =>
             new Date(b.date) -
             new Date(a.date)
     );
+
 
     if (!activities.length) {
 
@@ -1605,6 +1581,7 @@ function renderRecentActivity() {
 
         return;
     }
+
 
     container.innerHTML =
         activities
@@ -1620,9 +1597,7 @@ function renderRecentActivity() {
                 >
 
                     <strong>
-                        ${escapeHtml(
-                            item.text
-                        )}
+                        ${escapeHtml(item.text)}
                     </strong>
 
                     <div
@@ -1645,6 +1620,7 @@ function renderRecentActivity() {
 
 }
 
+
 // ======================================================
 // DELETE FIELD
 // ======================================================
@@ -1655,16 +1631,15 @@ async function deleteField(id) {
         "Delete this field record?"
     )) return;
 
+
     const {
         error
     } = await supabaseClient
         .from("fields")
         .delete()
         .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+        .eq("user_id", currentUser.id);
+
 
     if (error) {
 
@@ -1673,9 +1648,11 @@ async function deleteField(id) {
         return;
     }
 
+
     await loadAllData();
 
 }
+
 
 // ======================================================
 // DELETE FARMER
@@ -1687,16 +1664,15 @@ async function deleteFarmer(id) {
         "Delete this farmer record?"
     )) return;
 
+
     const {
         error
     } = await supabaseClient
         .from("farmers")
         .delete()
         .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+        .eq("user_id", currentUser.id);
+
 
     if (error) {
 
@@ -1705,9 +1681,11 @@ async function deleteFarmer(id) {
         return;
     }
 
+
     await loadAllData();
 
 }
+
 
 // ======================================================
 // DELETE HEALTH
@@ -1719,16 +1697,15 @@ async function deleteObservation(id) {
         "Delete this health observation?"
     )) return;
 
+
     const {
         error
     } = await supabaseClient
         .from("crop_observations")
         .delete()
         .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+        .eq("user_id", currentUser.id);
+
 
     if (error) {
 
@@ -1737,9 +1714,11 @@ async function deleteObservation(id) {
         return;
     }
 
+
     await loadAllData();
 
 }
+
 
 // ======================================================
 // DELETE DIARY
@@ -1751,16 +1730,15 @@ async function deleteDiary(id) {
         "Delete this diary entry?"
     )) return;
 
+
     const {
         error
     } = await supabaseClient
         .from("field_diary")
         .delete()
         .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+        .eq("user_id", currentUser.id);
+
 
     if (error) {
 
@@ -1769,9 +1747,11 @@ async function deleteDiary(id) {
         return;
     }
 
+
     await loadAllData();
 
 }
+
 
 // ======================================================
 // DELETE EVERYTHING
@@ -1781,14 +1761,15 @@ async function deleteAllData() {
 
     if (!currentUser) return;
 
+
     const confirmed =
         confirm(
-            "WARNING!\n\n" +
-            "This will permanently delete ALL your research data.\n\n" +
-            "Continue?"
+            "WARNING!\n\nThis will permanently delete ALL your research data.\n\nContinue?"
         );
 
+
     if (!confirmed) return;
+
 
     const tables = [
 
@@ -1800,6 +1781,7 @@ async function deleteAllData() {
 
     ];
 
+
     for (const table of tables) {
 
         const {
@@ -1807,24 +1789,20 @@ async function deleteAllData() {
         } = await supabaseClient
             .from(table)
             .delete()
-            .eq(
-                "user_id",
-                currentUser.id
-            );
+            .eq("user_id", currentUser.id);
+
 
         if (error) {
 
-            // Ignore table if it does not exist
-            if (
-                error.code === "42P01" ||
-                error.message
-                    ?.toLowerCase()
-                    .includes("does not exist")
-            ) {
-
+            // research_samples table missing ho to baaki delete
+            // process ko unnecessarily stop nahi karenge
+            if (table === "research_samples") {
+                console.warn(
+                    "research_samples table not available."
+                );
                 continue;
-
             }
+
 
             alert(
                 `Could not clear ${table}:\n${error.message}`
@@ -1835,13 +1813,16 @@ async function deleteAllData() {
 
     }
 
+
     await loadAllData();
+
 
     alert(
         "All research data has been deleted."
     );
 
 }
+
 
 // ======================================================
 // BACKUP EXPORT
@@ -1867,6 +1848,7 @@ async function exportBackup() {
 
     };
 
+
     const blob =
         new Blob(
             [
@@ -1882,26 +1864,27 @@ async function exportBackup() {
             }
         );
 
+
     const url =
         URL.createObjectURL(blob);
 
+
     const a =
         document.createElement("a");
+
 
     a.href = url;
 
     a.download =
         `nayakhap-research-backup-${today()}.json`;
 
-    document.body.appendChild(a);
-
     a.click();
 
-    a.remove();
 
     URL.revokeObjectURL(url);
 
 }
+
 
 // ======================================================
 // RESTORE BACKUP
@@ -1912,7 +1895,9 @@ async function restoreBackup(event) {
     const file =
         event.target.files[0];
 
+
     if (!file) return;
+
 
     try {
 
@@ -1922,21 +1907,11 @@ async function restoreBackup(event) {
         const backup =
             JSON.parse(text);
 
-        if (
-            !backup ||
-            typeof backup !== "object"
-        ) {
-
-            throw new Error(
-                "Invalid backup"
-            );
-
-        }
 
         alert(
-            "Backup file read successfully.\n\n" +
-            "Your cloud data has NOT been changed."
+            "Backup file read successfully.\n\nFor safety, automatic restore is not enabled yet. Your current cloud data has NOT been changed."
         );
+
 
     } catch (error) {
 
@@ -1946,9 +1921,11 @@ async function restoreBackup(event) {
 
     }
 
+
     event.target.value = "";
 
 }
+
 
 // ======================================================
 // MODALS
@@ -1959,26 +1936,22 @@ function openModal(id) {
     const modal =
         document.getElementById(id);
 
-    if (modal) {
-
+    if (modal)
         modal.classList.add("open");
 
-    }
-
 }
+
 
 function closeModal(id) {
 
     const modal =
         document.getElementById(id);
 
-    if (modal) {
-
+    if (modal)
         modal.classList.remove("open");
 
-    }
-
 }
+
 
 // ======================================================
 // HELPERS
@@ -1992,6 +1965,7 @@ function today() {
 
 }
 
+
 function parseNumber(value) {
 
     if (
@@ -2004,8 +1978,10 @@ function parseNumber(value) {
 
     }
 
+
     const number =
         Number(value);
+
 
     return Number.isFinite(number)
         ? number
@@ -2013,22 +1989,22 @@ function parseNumber(value) {
 
 }
 
+
 function formatDate(value) {
 
     if (!value) return "-";
 
+
     const date =
         new Date(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+
+    if (Number.isNaN(date.getTime())) {
 
         return value;
 
     }
+
 
     return date.toLocaleDateString(
         "en-IN",
@@ -2041,22 +2017,22 @@ function formatDate(value) {
 
 }
 
+
 function formatDateTime(value) {
 
     if (!value) return "-";
 
+
     const date =
         new Date(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+
+    if (Number.isNaN(date.getTime())) {
 
         return "-";
 
     }
+
 
     return date.toLocaleString(
         "en-IN",
@@ -2071,6 +2047,7 @@ function formatDateTime(value) {
 
 }
 
+
 function escapeHtml(value) {
 
     if (
@@ -2082,42 +2059,29 @@ function escapeHtml(value) {
 
     }
 
+
     return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
 }
 
+
 // ======================================================
-// AUTH UI HELPERS
+// AUTH UI
 // ======================================================
 
 function setAuthLoading(loading) {
 
     const button =
-        document.getElementById(
-            "authSubmit"
-        );
+        document.getElementById("authSubmit");
+
 
     if (!button) return;
+
 
     if (loading) {
 
@@ -2132,11 +2096,10 @@ function setAuthLoading(loading) {
 
         const signup =
             document
-                .getElementById(
-                    "signupTab"
-                )
+                .getElementById("signupTab")
                 ?.classList
                 .contains("active");
+
 
         button.textContent =
             signup
@@ -2147,17 +2110,18 @@ function setAuthLoading(loading) {
 
 }
 
+
 function showAuthMessage(
     message,
     type = ""
 ) {
 
     const box =
-        document.getElementById(
-            "authMessage"
-        );
+        document.getElementById("authMessage");
+
 
     if (!box) return;
+
 
     box.textContent =
         message;
@@ -2167,14 +2131,15 @@ function showAuthMessage(
 
 }
 
+
 function clearAuthMessage() {
 
     const box =
-        document.getElementById(
-            "authMessage"
-        );
+        document.getElementById("authMessage");
+
 
     if (!box) return;
+
 
     box.textContent =
         "";
@@ -2184,35 +2149,20 @@ function clearAuthMessage() {
 
 }
 
+
 // ======================================================
-// GLOBAL FUNCTIONS
-// Required for HTML onclick=""
-//
+// GLOBAL ACCESS
 // ======================================================
 
-window.openModal =
-    openModal;
+window.openModal = openModal;
+window.closeModal = closeModal;
 
-window.closeModal =
-    closeModal;
+window.deleteField = deleteField;
+window.deleteFarmer = deleteFarmer;
+window.deleteObservation = deleteObservation;
+window.deleteDiary = deleteDiary;
 
-window.deleteField =
-    deleteField;
+window.deleteAllData = deleteAllData;
 
-window.deleteFarmer =
-    deleteFarmer;
-
-window.deleteObservation =
-    deleteObservation;
-
-window.deleteDiary =
-    deleteDiary;
-
-window.deleteAllData =
-    deleteAllData;
-
-window.exportBackup =
-    exportBackup;
-
-window.restoreBackup =
-    restoreBackup;
+window.exportBackup = exportBackup;
+window.restoreBackup = restoreBackup;
