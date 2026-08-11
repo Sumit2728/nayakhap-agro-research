@@ -1,344 +1,1021 @@
-/*
-    NayaKhap Agro Research
-    Offline-first agricultural research database
-*/
+// ======================================================
+// NAYAKHAP AGRO RESEARCH
+// SUPABASE CLOUD VERSION
+// ======================================================
 
-const STORAGE_KEY = "nayakhap_agro_research_v1";
+const SUPABASE_URL =
+    "https://cuhffitgrgewewoqdhgn.supabase.co";
 
-let db = {
-    fields: [],
-    farmers: [],
-    health: [],
-    diary: []
-};
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_d9g-n2-Q3jEpW447fT-hXA_RW29I84n";
 
-
-// -------------------------
-// DATABASE
-// -------------------------
-
-function saveDB() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-    refreshDashboard();
-}
-
-function loadDB() {
-
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if (saved) {
-        try {
-            db = JSON.parse(saved);
-
-            db.fields ||= [];
-            db.farmers ||= [];
-            db.health ||= [];
-            db.diary ||= [];
-
-        } catch (error) {
-            console.error("Database error:", error);
-        }
-    }
-
-    refreshDashboard();
-}
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    );
 
 
-// -------------------------
-// NAVIGATION
-// -------------------------
+// ======================================================
+// GLOBAL DATA
+// ======================================================
 
-const navButtons = document.querySelectorAll(".nav-btn");
-const pages = document.querySelectorAll(".page");
+let currentUser = null;
 
-const titles = {
-    dashboard: "Research Dashboard",
-    fields: "Field Records",
-    farmers: "Farmer Records",
-    health: "Crop Health",
-    diary: "Field Diary",
-    backup: "Backup & Data"
-};
+let fields = [];
+let farmers = [];
+let observations = [];
+let diaryEntries = [];
 
-navButtons.forEach(button => {
 
-    button.addEventListener("click", () => {
+// ======================================================
+// DOM READY
+// ======================================================
 
-        const page = button.dataset.page;
+document.addEventListener("DOMContentLoaded", async () => {
 
-        navButtons.forEach(btn => btn.classList.remove("active"));
-        button.classList.add("active");
+    setupNavigation();
+    setupAuth();
+    setupForms();
+    setupSearch();
 
-        pages.forEach(section => {
-            section.classList.remove("active");
-        });
-
-        document.getElementById(page).classList.add("active");
-
-        document.getElementById("pageTitle").textContent =
-            titles[page];
-
-        document.querySelector(".sidebar").classList.remove("open");
-
-        refreshPage(page);
-    });
+    await checkAuth();
 
 });
 
 
-document.getElementById("mobileMenu").addEventListener("click", () => {
-    document.querySelector(".sidebar").classList.toggle("open");
-});
+// ======================================================
+// AUTHENTICATION
+// ======================================================
 
+function setupAuth() {
 
-// -------------------------
-// MODALS
-// -------------------------
+    const loginTab =
+        document.getElementById("loginTab");
 
-function openModal(id) {
-    document.getElementById(id).classList.add("open");
-}
+    const signupTab =
+        document.getElementById("signupTab");
 
-function closeModal(id) {
-    document.getElementById(id).classList.remove("open");
-}
+    const authForm =
+        document.getElementById("authForm");
 
+    loginTab.addEventListener("click", () => {
 
-// Close when clicking outside
+        loginTab.classList.add("active");
+        signupTab.classList.remove("active");
 
-document.querySelectorAll(".modal").forEach(modal => {
+        document.getElementById("authSubmit").textContent =
+            "Login";
 
-    modal.addEventListener("click", event => {
+        document.getElementById("confirmPasswordWrap").style.display =
+            "none";
 
-        if (event.target === modal) {
-            modal.classList.remove("open");
-        }
+        document.getElementById("authConfirmPassword").required =
+            false;
+
+        clearAuthMessage();
 
     });
 
-});
+
+    signupTab.addEventListener("click", () => {
+
+        signupTab.classList.add("active");
+        loginTab.classList.remove("active");
+
+        document.getElementById("authSubmit").textContent =
+            "Create Account";
+
+        document.getElementById("confirmPasswordWrap").style.display =
+            "block";
+
+        document.getElementById("authConfirmPassword").required =
+            true;
+
+        clearAuthMessage();
+
+    });
 
 
-// -------------------------
-// FIELD FORM
-// -------------------------
+    authForm.addEventListener("submit", async (event) => {
 
-document.getElementById("fieldForm").addEventListener("submit", event => {
+        event.preventDefault();
 
-    event.preventDefault();
+        const isSignup =
+            signupTab.classList.contains("active");
 
-    const record = {
+        const email =
+            document.getElementById("authEmail").value.trim();
 
-        id: document.getElementById("fieldId").value.trim(),
+        const password =
+            document.getElementById("authPassword").value;
 
-        crop: document.getElementById("fieldCrop").value.trim(),
-
-        variety: document.getElementById("fieldVariety").value.trim(),
-
-        date: document.getElementById("fieldDate").value,
-
-        water: document.getElementById("fieldWater").value,
-
-        size: document.getElementById("fieldSize").value.trim(),
-
-        fertilizer:
-            document.getElementById("fieldFertilizer").value.trim(),
-
-        yield:
-            document.getElementById("fieldYield").value.trim(),
-
-        notes:
-            document.getElementById("fieldNotes").value.trim(),
-
-        createdAt: new Date().toISOString()
-
-    };
+        const confirmPassword =
+            document.getElementById("authConfirmPassword").value;
 
 
-    const exists = db.fields.some(field => field.id === record.id);
+        if (!email || !password) {
 
-    if (exists) {
-        alert("This Field ID already exists.");
+            showAuthMessage(
+                "Please enter email and password.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        if (isSignup) {
+
+            if (password !== confirmPassword) {
+
+                showAuthMessage(
+                    "Passwords do not match.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (password.length < 6) {
+
+                showAuthMessage(
+                    "Password must contain at least 6 characters.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            await signupUser(
+                email,
+                password
+            );
+
+        } else {
+
+            await loginUser(
+                email,
+                password
+            );
+
+        }
+
+    });
+
+
+    document
+        .getElementById("logoutBtn")
+        .addEventListener("click", logoutUser);
+
+}
+
+
+// ======================================================
+// SIGN UP
+// ======================================================
+
+async function signupUser(email, password) {
+
+    setAuthLoading(true);
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.signUp({
+
+        email,
+        password,
+
+        options: {
+
+            emailRedirectTo:
+                "https://sumit2728.github.io/nayakhap-agro-research/"
+
+        }
+
+    });
+
+
+    setAuthLoading(false);
+
+
+    if (error) {
+
+        showAuthMessage(
+            error.message,
+            "error"
+        );
+
         return;
     }
 
 
-    db.fields.push(record);
+    if (data.session) {
 
-    saveDB();
+        showAuthMessage(
+            "Account created successfully.",
+            "success"
+        );
 
-    event.target.reset();
+        currentUser = data.user;
 
-    closeModal("fieldModal");
+        await showApp();
 
-    renderFields();
+    } else {
 
-    alert("Field record saved successfully.");
-});
+        showAuthMessage(
+            "Account created. Please check your email and confirm your account before logging in.",
+            "success"
+        );
+
+    }
+
+}
 
 
-// -------------------------
-// FARMER FORM
-// -------------------------
+// ======================================================
+// LOGIN
+// ======================================================
 
-document.getElementById("farmerForm").addEventListener("submit", event => {
+async function loginUser(email, password) {
 
-    event.preventDefault();
+    setAuthLoading(true);
 
-    const record = {
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.signInWithPassword({
 
-        code:
-            document.getElementById("farmerCode").value.trim(),
+        email,
+        password
 
-        crop:
-            document.getElementById("farmerCrop").value.trim(),
+    });
 
-        seed:
-            document.getElementById("seedSource").value.trim(),
 
-        water:
-            document.getElementById("farmerWater").value,
+    setAuthLoading(false);
 
-        problem:
-            document.getElementById("farmerProblem").value.trim(),
 
-        observation:
-            document.getElementById("farmerObservation").value.trim(),
+    if (error) {
 
-        createdAt: new Date().toISOString()
+        showAuthMessage(
+            error.message,
+            "error"
+        );
+
+        return;
+    }
+
+
+    currentUser = data.user;
+
+    await showApp();
+
+}
+
+
+// ======================================================
+// LOGOUT
+// ======================================================
+
+async function logoutUser() {
+
+    const {
+        error
+    } = await supabaseClient.auth.signOut();
+
+
+    if (error) {
+
+        alert(error.message);
+
+        return;
+    }
+
+
+    currentUser = null;
+
+    fields = [];
+    farmers = [];
+    observations = [];
+    diaryEntries = [];
+
+
+    document.getElementById("appShell").style.display =
+        "none";
+
+    document.getElementById("authScreen").style.display =
+        "flex";
+
+}
+
+
+// ======================================================
+// CHECK EXISTING SESSION
+// ======================================================
+
+async function checkAuth() {
+
+    const {
+        data
+    } = await supabaseClient.auth.getSession();
+
+
+    if (data.session) {
+
+        currentUser =
+            data.session.user;
+
+        await showApp();
+
+    } else {
+
+        document.getElementById("authScreen").style.display =
+            "flex";
+
+        document.getElementById("appShell").style.display =
+            "none";
+
+    }
+
+
+    supabaseClient.auth.onAuthStateChange(
+        async (_event, session) => {
+
+            if (session) {
+
+                currentUser =
+                    session.user;
+
+            }
+
+        }
+    );
+
+}
+
+
+// ======================================================
+// SHOW APPLICATION
+// ======================================================
+
+async function showApp() {
+
+    document.getElementById("authScreen").style.display =
+        "none";
+
+    document.getElementById("appShell").style.display =
+        "flex";
+
+
+    document.getElementById("userEmail").textContent =
+        currentUser?.email || "";
+
+
+    await loadAllData();
+
+    updateDashboard();
+
+}
+
+
+// ======================================================
+// LOAD ALL CLOUD DATA
+// ======================================================
+
+async function loadAllData() {
+
+    if (!currentUser) return;
+
+
+    const [
+        fieldsResponse,
+        farmersResponse,
+        observationsResponse,
+        diaryResponse
+    ] = await Promise.all([
+
+        supabaseClient
+            .from("fields")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            }),
+
+        supabaseClient
+            .from("farmers")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            }),
+
+        supabaseClient
+            .from("crop_observations")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            }),
+
+        supabaseClient
+            .from("field_diary")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            })
+
+    ]);
+
+
+    if (fieldsResponse.error) {
+
+        console.error(
+            "Fields:",
+            fieldsResponse.error
+        );
+
+    }
+
+
+    if (farmersResponse.error) {
+
+        console.error(
+            "Farmers:",
+            farmersResponse.error
+        );
+
+    }
+
+
+    if (observationsResponse.error) {
+
+        console.error(
+            "Observations:",
+            observationsResponse.error
+        );
+
+    }
+
+
+    if (diaryResponse.error) {
+
+        console.error(
+            "Diary:",
+            diaryResponse.error
+        );
+
+    }
+
+
+    fields =
+        fieldsResponse.data || [];
+
+    farmers =
+        farmersResponse.data || [];
+
+    observations =
+        observationsResponse.data || [];
+
+    diaryEntries =
+        diaryResponse.data || [];
+
+
+    renderAll();
+
+}
+
+
+// ======================================================
+// NAVIGATION
+// ======================================================
+
+function setupNavigation() {
+
+    const buttons =
+        document.querySelectorAll(".nav-btn");
+
+
+    buttons.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                const page =
+                    button.dataset.page;
+
+                showPage(page);
+
+            }
+        );
+
+    });
+
+
+    document
+        .getElementById("mobileMenu")
+        ?.addEventListener(
+            "click",
+            () => {
+
+                document
+                    .querySelector(".sidebar")
+                    .classList
+                    .toggle("open");
+
+            }
+        );
+
+}
+
+
+function showPage(page) {
+
+    document
+        .querySelectorAll(".page")
+        .forEach(section => {
+
+            section.classList.remove("active");
+
+        });
+
+
+    const target =
+        document.getElementById(page);
+
+    if (target) {
+
+        target.classList.add("active");
+
+    }
+
+
+    document
+        .querySelectorAll(".nav-btn")
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.page === page
+            );
+
+        });
+
+
+    const titles = {
+
+        dashboard:
+            "Research Dashboard",
+
+        fields:
+            "Field Records",
+
+        farmers:
+            "Farmer Records",
+
+        health:
+            "Crop Health",
+
+        diary:
+            "Field Diary",
+
+        backup:
+            "Backup & Data"
 
     };
 
 
-    db.farmers.push(record);
-
-    saveDB();
-
-    event.target.reset();
-
-    closeModal("farmerModal");
-
-    renderFarmers();
-
-    alert("Farmer record saved.");
-});
+    document.getElementById("pageTitle").textContent =
+        titles[page] || "Research Dashboard";
 
 
-// -------------------------
-// HEALTH FORM
-// -------------------------
+    document
+        .querySelector(".sidebar")
+        ?.classList
+        .remove("open");
 
-document.getElementById("healthForm").addEventListener("submit", event => {
+}
+
+
+// ======================================================
+// FORMS
+// ======================================================
+
+function setupForms() {
+
+    document
+        .getElementById("fieldForm")
+        .addEventListener(
+            "submit",
+            saveField
+        );
+
+
+    document
+        .getElementById("farmerForm")
+        .addEventListener(
+            "submit",
+            saveFarmer
+        );
+
+
+    document
+        .getElementById("healthForm")
+        .addEventListener(
+            "submit",
+            saveHealthObservation
+        );
+
+
+    document
+        .getElementById("diaryForm")
+        .addEventListener(
+            "submit",
+            saveDiaryEntry
+        );
+
+
+    document
+        .getElementById("healthDate").value =
+        today();
+
+
+    document
+        .getElementById("diaryDate").value =
+        today();
+
+}
+
+
+// ======================================================
+// SAVE FIELD
+// ======================================================
+
+async function saveField(event) {
 
     event.preventDefault();
 
+
+    if (!currentUser) {
+
+        alert("Please login first.");
+
+        return;
+    }
+
+
     const record = {
 
-        date:
-            document.getElementById("healthDate").value,
-
-        field:
-            document.getElementById("healthField").value.trim(),
+        field_name:
+            document.getElementById("fieldId").value.trim(),
 
         crop:
-            document.getElementById("healthCrop").value.trim(),
+            document.getElementById("fieldCrop").value.trim(),
 
-        severity:
-            document.getElementById("healthSeverity").value,
+        variety:
+            document.getElementById("fieldVariety").value.trim(),
 
-        symptoms:
+        sowing_date:
+            document.getElementById("fieldDate").value || null,
+
+        irrigation_source:
+            document.getElementById("fieldWater").value,
+
+        area:
+            parseNumber(
+                document.getElementById("fieldSize").value
+            ),
+
+        fertilizer:
+            document.getElementById("fieldFertilizer").value.trim(),
+
+        yield_value:
+            parseNumber(
+                document.getElementById("fieldYield").value
+            ),
+
+        notes:
+            document.getElementById("fieldNotes").value.trim(),
+
+        user_id:
+            currentUser.id
+
+    };
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from("fields")
+        .insert(record);
+
+
+    if (error) {
+
+        alert(
+            "Could not save field:\n" +
+            error.message
+        );
+
+        return;
+    }
+
+
+    closeModal("fieldModal");
+
+    event.target.reset();
+
+    await loadAllData();
+
+}
+
+
+// ======================================================
+// SAVE FARMER
+// ======================================================
+
+async function saveFarmer(event) {
+
+    event.preventDefault();
+
+
+    if (!currentUser) return;
+
+
+    const record = {
+
+        farmer_code:
+            document.getElementById("farmerCode").value.trim(),
+
+        main_crop:
+            document.getElementById("farmerCrop").value.trim(),
+
+        seed_source:
+            document.getElementById("seedSource").value.trim(),
+
+        farming_method:
+            document.getElementById("farmerWater").value,
+
+        notes:
+            [
+                document.getElementById("farmerProblem").value.trim(),
+                document.getElementById("farmerObservation").value.trim()
+            ]
+            .filter(Boolean)
+            .join(" | "),
+
+        user_id:
+            currentUser.id
+
+    };
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from("farmers")
+        .insert(record);
+
+
+    if (error) {
+
+        alert(
+            "Could not save farmer:\n" +
+            error.message
+        );
+
+        return;
+    }
+
+
+    closeModal("farmerModal");
+
+    event.target.reset();
+
+    await loadAllData();
+
+}
+
+
+// ======================================================
+// SAVE CROP HEALTH
+// ======================================================
+
+async function saveHealthObservation(event) {
+
+    event.preventDefault();
+
+
+    if (!currentUser) return;
+
+
+    const record = {
+
+        observation_date:
+            document.getElementById("healthDate").value,
+
+        field_code:
+            document.getElementById("healthField").value.trim(),
+
+        crop_name:
+            document.getElementById("healthCrop").value.trim() ||
+            "Not specified",
+
+        disease_symptoms:
             document.getElementById("healthSymptoms").value.trim(),
 
-        identification:
+        crop_stage:
             document.getElementById("healthIdentification").value.trim(),
 
         treatment:
             document.getElementById("healthTreatment").value.trim(),
 
-        createdAt: new Date().toISOString()
+        pest_observation:
+            document.getElementById("healthSeverity").value,
+
+        user_id:
+            currentUser.id
 
     };
 
 
-    db.health.push(record);
+    const {
+        error
+    } = await supabaseClient
+        .from("crop_observations")
+        .insert(record);
 
-    saveDB();
 
-    event.target.reset();
+    if (error) {
+
+        alert(
+            "Could not save observation:\n" +
+            error.message
+        );
+
+        return;
+    }
+
 
     closeModal("healthModal");
 
-    renderHealth();
+    event.target.reset();
 
-    alert("Crop-health observation saved.");
-});
+    document.getElementById("healthDate").value =
+        today();
+
+    await loadAllData();
+
+}
 
 
-// -------------------------
-// DIARY FORM
-// -------------------------
+// ======================================================
+// SAVE DIARY
+// ======================================================
 
-document.getElementById("diaryForm").addEventListener("submit", event => {
+async function saveDiaryEntry(event) {
 
     event.preventDefault();
 
+
+    if (!currentUser) return;
+
+
     const record = {
 
-        date:
+        entry_date:
             document.getElementById("diaryDate").value,
 
-        field:
+        field_code:
             document.getElementById("diaryField").value.trim(),
+
+        activity:
+            "Field observation",
 
         observation:
             document.getElementById("diaryObservation").value.trim(),
 
-        weather:
+        weather_condition:
             document.getElementById("diaryWeather").value.trim(),
 
-        createdAt: new Date().toISOString()
+        user_id:
+            currentUser.id
 
     };
 
 
-    db.diary.unshift(record);
+    const {
+        error
+    } = await supabaseClient
+        .from("field_diary")
+        .insert(record);
 
-    saveDB();
 
-    event.target.reset();
+    if (error) {
+
+        alert(
+            "Could not save diary entry:\n" +
+            error.message
+        );
+
+        return;
+    }
+
 
     closeModal("diaryModal");
 
-    renderDiary();
+    event.target.reset();
 
-    alert("Diary entry saved.");
-});
+    document.getElementById("diaryDate").value =
+        today();
+
+    await loadAllData();
+
+}
 
 
-// -------------------------
-// FIELD TABLE
-// -------------------------
+// ======================================================
+// SEARCH
+// ======================================================
 
-function renderFields(search = "") {
+function setupSearch() {
 
-    const table = document.getElementById("fieldTable");
+    const search =
+        document.getElementById("fieldSearch");
 
-    const query = search.toLowerCase();
 
-    const records = db.fields.filter(field =>
-
-        field.id.toLowerCase().includes(query) ||
-
-        field.crop.toLowerCase().includes(query) ||
-
-        field.variety.toLowerCase().includes(query)
-
+    search?.addEventListener(
+        "input",
+        renderFields
     );
 
+}
 
-    if (!records.length) {
 
-        table.innerHTML = `
+// ======================================================
+// RENDER EVERYTHING
+// ======================================================
+
+function renderAll() {
+
+    renderFields();
+
+    renderFarmers();
+
+    renderHealth();
+
+    renderDiary();
+
+    updateDashboard();
+
+}
+
+
+// ======================================================
+// FIELD TABLE
+// ======================================================
+
+function renderFields() {
+
+    const tbody =
+        document.getElementById("fieldTable");
+
+    const search =
+        (
+            document.getElementById("fieldSearch")
+                ?.value || ""
+        )
+        .toLowerCase();
+
+
+    const filtered =
+        fields.filter(field => {
+
+            const text = [
+
+                field.field_name,
+                field.crop,
+                field.variety
+
+            ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+
+            return text.includes(search);
+
+        });
+
+
+    if (!filtered.length) {
+
+        tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="empty">
                     No field records found.
@@ -350,48 +1027,68 @@ function renderFields(search = "") {
     }
 
 
-    table.innerHTML = records.map(field => `
+    tbody.innerHTML =
+        filtered.map(field => `
 
-        <tr>
+            <tr>
 
-            <td><strong>${escapeHTML(field.id)}</strong></td>
+                <td>
+                    <strong>
+                        ${escapeHtml(field.field_name || "-")}
+                    </strong>
+                </td>
 
-            <td>${escapeHTML(field.crop)}</td>
+                <td>
+                    ${escapeHtml(field.crop || "-")}
+                </td>
 
-            <td>${escapeHTML(field.variety || "-")}</td>
+                <td>
+                    ${escapeHtml(field.variety || "-")}
+                </td>
 
-            <td>${escapeHTML(field.water)}</td>
+                <td>
+                    ${escapeHtml(field.irrigation_source || "-")}
+                </td>
 
-            <td>${escapeHTML(field.date || "-")}</td>
+                <td>
+                    ${formatDate(field.sowing_date)}
+                </td>
 
-            <td>
-                <button
-                    class="delete-btn"
-                    onclick="deleteRecord('fields', '${field.id}')">
-                    Delete
-                </button>
-            </td>
+                <td>
 
-        </tr>
+                    <button
+                        class="delete-btn"
+                        onclick="deleteField('${field.id}')"
+                    >
+                        Delete
+                    </button>
 
-    `).join("");
+                </td>
+
+            </tr>
+
+        `)
+        .join("");
+
 }
 
 
-// -------------------------
+// ======================================================
 // FARMER TABLE
-// -------------------------
+// ======================================================
 
 function renderFarmers() {
 
-    const table = document.getElementById("farmerTable");
+    const tbody =
+        document.getElementById("farmerTable");
 
-    if (!db.farmers.length) {
 
-        table.innerHTML = `
+    if (!farmers.length) {
+
+        tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="empty">
-                    No farmer records yet.
+                <td colspan="5" class="empty">
+                    No farmer records found.
                 </td>
             </tr>
         `;
@@ -400,45 +1097,61 @@ function renderFarmers() {
     }
 
 
-    table.innerHTML = db.farmers.map((farmer, index) => `
+    tbody.innerHTML =
+        farmers.map(farmer => `
 
-        <tr>
+            <tr>
 
-            <td><strong>${escapeHTML(farmer.code)}</strong></td>
+                <td>
+                    <strong>
+                        ${escapeHtml(farmer.farmer_code || "-")}
+                    </strong>
+                </td>
 
-            <td>${escapeHTML(farmer.crop || "-")}</td>
+                <td>
+                    ${escapeHtml(farmer.main_crop || "-")}
+                </td>
 
-            <td>${escapeHTML(farmer.seed || "-")}</td>
+                <td>
+                    ${escapeHtml(farmer.seed_source || "-")}
+                </td>
 
-            <td>${escapeHTML(farmer.water)}</td>
+                <td>
+                    ${escapeHtml(farmer.farming_method || "-")}
+                </td>
 
-            <td>${escapeHTML(farmer.problem || "-")}</td>
+                <td>
 
-            <td>
-                <button
-                    class="delete-btn"
-                    onclick="deleteRecord('farmers', ${index})">
-                    Delete
-                </button>
-            </td>
+                    <button
+                        class="delete-btn"
+                        onclick="deleteFarmer('${farmer.id}')"
+                    >
+                        Delete
+                    </button>
 
-        </tr>
+                </td>
 
-    `).join("");
+            </tr>
+
+        `)
+        .join("");
+
 }
 
 
-// -------------------------
+// ======================================================
 // HEALTH TABLE
-// -------------------------
+// ======================================================
 
 function renderHealth() {
 
-    const table = document.getElementById("healthTable");
+    const tbody =
+        document.getElementById("healthTable");
 
-    if (!db.health.length) {
 
-        table.innerHTML = `
+    if (!observations.length) {
+
+        tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="empty">
                     No crop-health observations yet.
@@ -450,49 +1163,65 @@ function renderHealth() {
     }
 
 
-    table.innerHTML = db.health.map((record, index) => `
+    tbody.innerHTML =
+        observations.map(item => `
 
-        <tr>
+            <tr>
 
-            <td>${escapeHTML(record.date)}</td>
+                <td>
+                    ${formatDate(item.observation_date)}
+                </td>
 
-            <td>${escapeHTML(record.field || "-")}</td>
+                <td>
+                    ${escapeHtml(item.field_code || "-")}
+                </td>
 
-            <td>${escapeHTML(record.crop || "-")}</td>
+                <td>
+                    ${escapeHtml(item.crop_name || "-")}
+                </td>
 
-            <td>${escapeHTML(record.symptoms)}</td>
+                <td>
+                    ${escapeHtml(item.disease_symptoms || "-")}
+                </td>
 
-            <td>${escapeHTML(record.severity)}</td>
+                <td>
+                    ${escapeHtml(item.pest_observation || "-")}
+                </td>
 
-            <td>${escapeHTML(record.identification || "Unknown")}</td>
+                <td>
+                    ${escapeHtml(item.crop_stage || "-")}
+                </td>
 
-            <td>
+                <td>
 
-                <button
-                    class="delete-btn"
-                    onclick="deleteRecord('health', ${index})">
+                    <button
+                        class="delete-btn"
+                        onclick="deleteObservation('${item.id}')"
+                    >
+                        Delete
+                    </button>
 
-                    Delete
+                </td>
 
-                </button>
+            </tr>
 
-            </td>
+        `)
+        .join("");
 
-        </tr>
-
-    `).join("");
 }
 
 
-// -------------------------
+// ======================================================
 // DIARY
-// -------------------------
+// ======================================================
 
 function renderDiary() {
 
-    const container = document.getElementById("diaryList");
+    const container =
+        document.getElementById("diaryList");
 
-    if (!db.diary.length) {
+
+    if (!diaryEntries.length) {
 
         container.innerHTML = `
             <div class="empty">
@@ -504,154 +1233,220 @@ function renderDiary() {
     }
 
 
-    container.innerHTML = db.diary.map((entry, index) => `
+    container.innerHTML =
+        diaryEntries.map(entry => `
 
-        <article class="diary-card">
+            <div class="diary-card">
 
-            <span class="diary-date">
-                ${escapeHTML(entry.date)}
-            </span>
+                <div class="diary-date">
 
-            <h3>
-                Field:
-                ${escapeHTML(entry.field || "Not specified")}
-            </h3>
+                    ${formatDate(entry.entry_date)}
 
-            <p>
-                ${escapeHTML(entry.observation)}
-            </p>
+                </div>
 
-            ${
-                entry.weather
-                    ? `
+                <h3>
+
+                    ${escapeHtml(
+                        entry.field_code ||
+                        "General Field Visit"
+                    )}
+
+                </h3>
+
+                <p>
+
+                    ${escapeHtml(
+                        entry.observation || "-"
+                    )}
+
+                </p>
+
+                ${
+                    entry.weather_condition
+                    ?
+                    `
                     <p style="margin-top:10px">
-                        <strong>Weather:</strong>
-                        ${escapeHTML(entry.weather)}
+
+                        <strong>
+                            Weather:
+                        </strong>
+
+                        ${escapeHtml(
+                            entry.weather_condition
+                        )}
+
                     </p>
                     `
-                    : ""
-            }
+                    :
+                    ""
+                }
 
-            <button
-                class="delete-btn"
-                style="margin-top:12px"
-                onclick="deleteRecord('diary', ${index})">
+                <button
+                    class="delete-btn"
+                    style="margin-top:12px"
+                    onclick="deleteDiary('${entry.id}')"
+                >
+                    Delete
+                </button>
 
-                Delete
+            </div>
 
-            </button>
+        `)
+        .join("");
 
-        </article>
-
-    `).join("");
 }
 
 
-// -------------------------
+// ======================================================
 // DASHBOARD
-// -------------------------
+// ======================================================
 
-function refreshDashboard() {
+function updateDashboard() {
 
     document.getElementById("fieldCount").textContent =
-        db.fields.length;
+        fields.length;
 
     document.getElementById("farmerCount").textContent =
-        db.farmers.length;
+        farmers.length;
 
     document.getElementById("healthCount").textContent =
-        db.health.length;
+        observations.length;
 
     document.getElementById("diaryCount").textContent =
-        db.diary.length;
+        diaryEntries.length;
 
 
     renderCropDistribution();
 
     renderRecentActivity();
 
-    renderFields();
-
-    renderFarmers();
-
-    renderHealth();
-
-    renderDiary();
 }
 
+
+// ======================================================
+// CROP DISTRIBUTION
+// ======================================================
 
 function renderCropDistribution() {
 
     const container =
         document.getElementById("cropDistribution");
 
-    const crops = {};
 
-    db.fields.forEach(field => {
+    if (!fields.length) {
 
-        const crop = field.crop || "Unknown";
-
-        crops[crop] = (crops[crop] || 0) + 1;
-
-    });
-
-
-    const entries = Object.entries(crops);
-
-    if (!entries.length) {
-
-        container.innerHTML =
-            `<div class="empty">No field data yet.</div>`;
+        container.innerHTML = `
+            <div class="empty">
+                No field data yet.
+            </div>
+        `;
 
         return;
     }
 
 
-    container.innerHTML = entries.map(([crop, count]) => `
+    const counts = {};
 
-        <div style="
-            display:flex;
-            justify-content:space-between;
-            padding:12px;
-            border-bottom:1px solid #e3e9e4;
-        ">
 
-            <span>🌱 ${escapeHTML(crop)}</span>
+    fields.forEach(field => {
 
-            <strong>${count}</strong>
+        const crop =
+            field.crop || "Unknown";
 
-        </div>
+        counts[crop] =
+            (counts[crop] || 0) + 1;
 
-    `).join("");
+    });
+
+
+    container.innerHTML =
+        Object.entries(counts)
+            .map(([crop, count]) => `
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:space-between;
+                        padding:10px 0;
+                        border-bottom:1px solid var(--border);
+                    "
+                >
+
+                    <span>
+                        🌱 ${escapeHtml(crop)}
+                    </span>
+
+                    <strong>
+                        ${count}
+                    </strong>
+
+                </div>
+
+            `)
+            .join("");
+
 }
 
+
+// ======================================================
+// RECENT ACTIVITY
+// ======================================================
 
 function renderRecentActivity() {
 
     const container =
         document.getElementById("recentActivity");
 
-    const activities = [
 
-        ...db.fields.map(item => ({
-            type: "🌾 Field",
-            text: `${item.id} — ${item.crop}`,
-            date: item.createdAt
-        })),
+    const activities = [];
 
-        ...db.health.map(item => ({
-            type: "🦠 Health",
-            text: `${item.crop || "Crop"} — ${item.symptoms}`,
-            date: item.createdAt
-        })),
 
-        ...db.diary.map(item => ({
-            type: "📓 Diary",
-            text: item.observation,
-            date: item.createdAt
-        }))
+    fields.slice(0, 3)
+        .forEach(item => {
 
-    ];
+            activities.push({
+
+                date:
+                    item.created_at,
+
+                text:
+                    `Field added: ${item.field_name}`
+
+            });
+
+        });
+
+
+    observations.slice(0, 3)
+        .forEach(item => {
+
+            activities.push({
+
+                date:
+                    item.created_at,
+
+                text:
+                    `Crop observation: ${item.crop_name}`
+
+            });
+
+        });
+
+
+    diaryEntries.slice(0, 3)
+        .forEach(item => {
+
+            activities.push({
+
+                date:
+                    item.created_at,
+
+                text:
+                    `Diary entry: ${item.field_code || "Field visit"}`
+
+            });
+
+        });
 
 
     activities.sort(
@@ -661,261 +1456,481 @@ function renderRecentActivity() {
     );
 
 
-    const latest = activities.slice(0, 6);
+    if (!activities.length) {
 
-
-    if (!latest.length) {
-
-        container.innerHTML =
-            `<div class="empty">No activity yet.</div>`;
+        container.innerHTML = `
+            <div class="empty">
+                No activity yet.
+            </div>
+        `;
 
         return;
     }
 
 
-    container.innerHTML = latest.map(item => `
+    container.innerHTML =
+        activities
+            .slice(0, 6)
+            .map(item => `
 
-        <div style="
-            padding:12px 0;
-            border-bottom:1px solid #e3e9e4;
-        ">
+                <div
+                    style="
+                        padding:10px 0;
+                        border-bottom:1px solid var(--border);
+                        font-size:13px;
+                    "
+                >
 
-            <strong>${item.type}</strong>
+                    <strong>
+                        ${escapeHtml(item.text)}
+                    </strong>
 
-            <div style="
-                color:#657167;
-                font-size:13px;
-                margin-top:4px;
-            ">
+                    <div
+                        style="
+                            color:var(--muted);
+                            margin-top:4px;
+                        "
+                    >
 
-                ${escapeHTML(item.text)}
+                        ${formatDateTime(item.date)}
 
-            </div>
+                    </div>
 
-        </div>
+                </div>
 
-    `).join("");
+            `)
+            .join("");
+
 }
 
 
-// -------------------------
-// SEARCH
-// -------------------------
+// ======================================================
+// DELETE FIELD
+// ======================================================
 
-document
-    .getElementById("fieldSearch")
-    .addEventListener("input", event => {
+async function deleteField(id) {
 
-        renderFields(event.target.value);
-
-    });
+    if (!confirm(
+        "Delete this field record?"
+    )) return;
 
 
-// -------------------------
-// DELETE
-// -------------------------
+    const {
+        error
+    } = await supabaseClient
+        .from("fields")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
 
-function deleteRecord(collection, identifier) {
 
-    if (!confirm("Delete this record?")) {
+    if (error) {
+
+        alert(error.message);
+
         return;
     }
 
 
-    if (collection === "fields") {
+    await loadAllData();
 
-        db.fields =
-            db.fields.filter(field =>
-                field.id !== identifier
+}
+
+
+// ======================================================
+// DELETE FARMER
+// ======================================================
+
+async function deleteFarmer(id) {
+
+    if (!confirm(
+        "Delete this farmer record?"
+    )) return;
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from("farmers")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+
+    if (error) {
+
+        alert(error.message);
+
+        return;
+    }
+
+
+    await loadAllData();
+
+}
+
+
+// ======================================================
+// DELETE HEALTH OBSERVATION
+// ======================================================
+
+async function deleteObservation(id) {
+
+    if (!confirm(
+        "Delete this health observation?"
+    )) return;
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from("crop_observations")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+
+    if (error) {
+
+        alert(error.message);
+
+        return;
+    }
+
+
+    await loadAllData();
+
+}
+
+
+// ======================================================
+// DELETE DIARY
+// ======================================================
+
+async function deleteDiary(id) {
+
+    if (!confirm(
+        "Delete this diary entry?"
+    )) return;
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from("field_diary")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+
+    if (error) {
+
+        alert(error.message);
+
+        return;
+    }
+
+
+    await loadAllData();
+
+}
+
+
+// ======================================================
+// DELETE EVERYTHING
+// ======================================================
+
+async function deleteAllData() {
+
+    if (!currentUser) return;
+
+
+    const confirmed =
+        confirm(
+            "WARNING!\n\nThis will permanently delete ALL your research data.\n\nContinue?"
+        );
+
+
+    if (!confirmed) return;
+
+
+    const tables = [
+
+        "crop_observations",
+        "field_diary",
+        "research_samples",
+        "fields",
+        "farmers"
+
+    ];
+
+
+    for (const table of tables) {
+
+        const {
+            error
+        } = await supabaseClient
+            .from(table)
+            .delete()
+            .eq("user_id", currentUser.id);
+
+
+        if (error) {
+
+            alert(
+                `Could not clear ${table}:\n${error.message}`
             );
 
-    } else {
-
-        db[collection].splice(identifier, 1);
+            return;
+        }
 
     }
 
 
-    saveDB();
+    await loadAllData();
 
-    refreshDashboard();
+    alert(
+        "All research data has been deleted."
+    );
+
 }
 
 
-// -------------------------
-// BACKUP
-// -------------------------
+// ======================================================
+// BACKUP EXPORT
+// ======================================================
 
-function exportBackup() {
+async function exportBackup() {
 
     const backup = {
 
-        app: "NayaKhap Agro Research",
-
-        version: 1,
-
-        exportedAt:
+        exported_at:
             new Date().toISOString(),
 
-        data: db
+        user:
+            currentUser?.email || "",
+
+        fields,
+
+        farmers,
+
+        observations,
+
+        diaryEntries
 
     };
 
 
-    const blob = new Blob(
-        [JSON.stringify(backup, null, 2)],
-        {
-            type: "application/json"
-        }
-    );
+    const blob =
+        new Blob(
+            [
+                JSON.stringify(
+                    backup,
+                    null,
+                    2
+                )
+            ],
+            {
+                type:
+                    "application/json"
+            }
+        );
 
 
     const url =
         URL.createObjectURL(blob);
 
 
-    const link =
+    const a =
         document.createElement("a");
 
-    link.href = url;
 
-    link.download =
-        `nayakhap-research-backup-${dateStamp()}.json`;
+    a.href = url;
 
-    link.click();
+    a.download =
+        `nayakhap-research-backup-${today()}.json`;
+
+    a.click();
+
 
     URL.revokeObjectURL(url);
+
 }
 
 
-// -------------------------
-// RESTORE
-// -------------------------
+// ======================================================
+// RESTORE BACKUP
+// ======================================================
 
-function restoreBackup(event) {
+async function restoreBackup(event) {
 
     const file =
         event.target.files[0];
 
-    if (!file) {
-        return;
-    }
+
+    if (!file) return;
 
 
-    const reader =
-        new FileReader();
+    try {
+
+        const text =
+            await file.text();
+
+        const backup =
+            JSON.parse(text);
 
 
-    reader.onload = function () {
-
-        try {
-
-            const backup =
-                JSON.parse(reader.result);
-
-
-            if (!backup.data) {
-                throw new Error("Invalid backup.");
-            }
-
-
-            if (
-                !confirm(
-                    "Restore this backup? Existing local data will be replaced."
-                )
-            ) {
-                return;
-            }
-
-
-            db = {
-
-                fields:
-                    backup.data.fields || [],
-
-                farmers:
-                    backup.data.farmers || [],
-
-                health:
-                    backup.data.health || [],
-
-                diary:
-                    backup.data.diary || []
-
-            };
-
-
-            saveDB();
-
-            alert("Backup restored successfully.");
-
-        }
-
-        catch (error) {
-
-            alert(
-                "Could not restore this backup file."
-            );
-
-        }
-
-    };
-
-
-    reader.readAsText(file);
-}
-
-
-// -------------------------
-// DELETE ALL
-// -------------------------
-
-function deleteAllData() {
-
-    const confirmation =
-        prompt(
-            "Type DELETE to permanently remove all research data:"
+        alert(
+            "Backup file read successfully.\n\nFor safety, restore is not automatic yet. Your current cloud data has NOT been changed."
         );
 
 
-    if (confirmation !== "DELETE") {
-        return;
+    } catch (error) {
+
+        alert(
+            "Invalid backup file."
+        );
+
     }
 
 
-    localStorage.removeItem(STORAGE_KEY);
+    event.target.value = "";
 
-    db = {
-        fields: [],
-        farmers: [],
-        health: [],
-        diary: []
-    };
-
-
-    refreshDashboard();
-
-    alert("All local research data has been deleted.");
 }
 
 
-// -------------------------
+// ======================================================
+// MODALS
+// ======================================================
+
+function openModal(id) {
+
+    document
+        .getElementById(id)
+        .classList
+        .add("open");
+
+}
+
+
+function closeModal(id) {
+
+    document
+        .getElementById(id)
+        .classList
+        .remove("open");
+
+}
+
+
+// ======================================================
 // HELPERS
-// -------------------------
+// ======================================================
 
-function dateStamp() {
+function today() {
 
-    const d = new Date();
-
-    return d.toISOString()
-        .slice(0, 10);
+    return new Date()
+        .toISOString()
+        .split("T")[0];
 
 }
 
 
-function escapeHTML(value) {
+function parseNumber(value) {
 
-    return String(value ?? "")
+    if (
+        value === null ||
+        value === undefined ||
+        value === ""
+    ) {
+
+        return null;
+
+    }
+
+
+    const number =
+        Number(value);
+
+
+    return Number.isFinite(number)
+        ? number
+        : null;
+
+}
+
+
+function formatDate(value) {
+
+    if (!value) return "-";
+
+
+    const date =
+        new Date(value);
+
+
+    if (Number.isNaN(date.getTime())) {
+
+        return value;
+
+    }
+
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+function formatDateTime(value) {
+
+    if (!value) return "-";
+
+
+    const date =
+        new Date(value);
+
+
+    if (Number.isNaN(date.getTime())) {
+
+        return "-";
+
+    }
+
+
+    return date.toLocaleString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -925,25 +1940,72 @@ function escapeHTML(value) {
 }
 
 
-function refreshPage(page) {
+// ======================================================
+// AUTH UI HELPERS
+// ======================================================
 
-    if (page === "fields")
-        renderFields();
+function setAuthLoading(loading) {
 
-    if (page === "farmers")
-        renderFarmers();
+    const button =
+        document.getElementById("authSubmit");
 
-    if (page === "health")
-        renderHealth();
 
-    if (page === "diary")
-        renderDiary();
+    if (loading) {
+
+        button.disabled = true;
+
+        button.textContent =
+            "Please wait...";
+
+    } else {
+
+        button.disabled = false;
+
+        const signup =
+            document
+                .getElementById("signupTab")
+                .classList
+                .contains("active");
+
+
+        button.textContent =
+            signup
+                ? "Create Account"
+                : "Login";
+
+    }
 
 }
 
 
-// -------------------------
-// START APPLICATION
-// -------------------------
+function showAuthMessage(
+    message,
+    type = ""
+) {
 
-loadDB();
+    const box =
+        document.getElementById("authMessage");
+
+
+    box.textContent =
+        message;
+
+    box.className =
+        `auth-message ${type}`;
+
+}
+
+
+function clearAuthMessage() {
+
+    const box =
+        document.getElementById("authMessage");
+
+
+    box.textContent =
+        "";
+
+    box.className =
+        "auth-message";
+
+}
