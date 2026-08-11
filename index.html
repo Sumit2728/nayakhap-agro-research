@@ -3,18 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>NayaKhap Agro Research</title>
 
     <link rel="stylesheet" href="./style.css">
 
     <style>
+        /* =========================
+           AUTH SCREEN
+        ========================= */
+
         #authScreen {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            background: linear-gradient(135deg, #e9f6ed, #f5f7f5);
+            background:
+                radial-gradient(circle at top left, #dff5e6, transparent 35%),
+                linear-gradient(135deg, #e9f6ed, #f5f7f5);
         }
 
         .auth-card {
@@ -22,9 +29,21 @@
             max-width: 430px;
             background: #fff;
             border: 1px solid #e3e9e4;
-            border-radius: 18px;
+            border-radius: 22px;
             padding: 30px;
-            box-shadow: 0 18px 50px rgba(24,91,49,.10);
+            box-shadow: 0 20px 60px rgba(24,91,49,.14);
+            animation: cardIn .5s ease;
+        }
+
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .auth-brand {
@@ -57,7 +76,7 @@
             border: 1px solid #d9e1db;
             background: #fff;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 9px;
             font-weight: 600;
             color: #536057;
         }
@@ -82,6 +101,10 @@
         .auth-message.success {
             color: #247a43;
         }
+
+        /* =========================
+           USER AREA
+        ========================= */
 
         .auth-user {
             display: flex;
@@ -119,6 +142,143 @@
             background: #35a85b;
             border-radius: 50%;
             display: inline-block;
+            box-shadow: 0 0 0 4px #e9f6ed;
+        }
+
+        /* =========================
+           FARMER RECORD
+        ========================= */
+
+        .farmer-code-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 9px;
+            border-radius: 7px;
+            background: #e9f6ed;
+            color: #185b31;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .view-farmer-btn {
+            border: 0;
+            background: #e9f6ed;
+            color: #185b31;
+            padding: 7px 10px;
+            border-radius: 7px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .view-farmer-btn:hover {
+            background: #d6efdc;
+        }
+
+        /* =========================
+           FARMER DETAIL MODAL
+        ========================= */
+
+        .farmer-profile {
+            background: linear-gradient(135deg, #185b31, #2f8d51);
+            color: white;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .farmer-profile-code {
+            font-size: 13px;
+            opacity: .8;
+        }
+
+        .farmer-profile h2 {
+            margin-top: 5px;
+        }
+
+        .farmer-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .farmer-detail-box {
+            border: 1px solid #e3e9e4;
+            border-radius: 10px;
+            padding: 13px;
+            background: #fafcfb;
+        }
+
+        .farmer-detail-box small {
+            color: #708074;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .farmer-detail-box strong {
+            color: #17231a;
+        }
+
+        .linked-records {
+            display: grid;
+            gap: 10px;
+        }
+
+        .linked-record {
+            border: 1px solid #e3e9e4;
+            border-radius: 10px;
+            padding: 13px;
+            background: white;
+        }
+
+        .linked-record small {
+            color: #708074;
+        }
+
+        .linked-record strong {
+            display: block;
+            margin: 3px 0;
+        }
+
+        /* =========================
+           DASHBOARD ANIMATION
+        ========================= */
+
+        .stat-card {
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(24,91,49,.08);
+        }
+
+        .card,
+        .table-card,
+        .backup-card,
+        .diary-card {
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+
+        .card:hover,
+        .backup-card:hover,
+        .diary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(24,91,49,.07);
+        }
+
+        @media (max-width: 750px) {
+            .auth-user {
+                flex-wrap: wrap;
+            }
+
+            .cloud-status {
+                display: none;
+            }
+
+            .farmer-detail-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 500px) {
@@ -141,9 +301,9 @@
 
 <body>
 
-<!-- ============================= -->
-<!-- LOGIN / SIGNUP SCREEN -->
-<!-- ============================= -->
+<!-- =====================================================
+     LOGIN / SIGNUP
+===================================================== -->
 
 <div id="authScreen">
 
@@ -151,7 +311,9 @@
 
         <div class="auth-brand">
 
-            <div class="brand-icon">🌱</div>
+            <div class="brand-icon">
+                🌱
+            </div>
 
             <h1>NayaKhap Agro Research</h1>
 
@@ -160,7 +322,6 @@
             </p>
 
         </div>
-
 
         <div class="auth-tabs">
 
@@ -182,7 +343,6 @@
 
         </div>
 
-
         <form id="authForm">
 
             <label>
@@ -195,9 +355,7 @@
                     placeholder="your@email.com"
                     autocomplete="email"
                 >
-
             </label>
-
 
             <label>
                 Password
@@ -210,9 +368,7 @@
                     placeholder="Minimum 6 characters"
                     autocomplete="current-password"
                 >
-
             </label>
-
 
             <label
                 id="confirmPasswordWrap"
@@ -227,9 +383,7 @@
                     placeholder="Re-enter password"
                     autocomplete="new-password"
                 >
-
             </label>
-
 
             <button
                 class="primary-btn full"
@@ -238,7 +392,6 @@
             >
                 Login
             </button>
-
 
             <div
                 id="authMessage"
@@ -252,16 +405,15 @@
 </div>
 
 
-<!-- ============================= -->
-<!-- MAIN APPLICATION -->
-<!-- ============================= -->
+<!-- =====================================================
+     MAIN APPLICATION
+===================================================== -->
 
 <div
     class="app"
     id="appShell"
     style="display:none"
 >
-
 
     <!-- SIDEBAR -->
 
@@ -274,17 +426,14 @@
             </div>
 
             <div>
-
                 <h2>NayaKhap</h2>
 
                 <span>
                     Agro Research
                 </span>
-
             </div>
 
         </div>
-
 
         <nav>
 
@@ -295,14 +444,12 @@
                 📊 Dashboard
             </button>
 
-
             <button
                 class="nav-btn"
                 data-page="fields"
             >
                 🌾 Field Records
             </button>
-
 
             <button
                 class="nav-btn"
@@ -311,7 +458,6 @@
                 👨‍🌾 Farmers
             </button>
 
-
             <button
                 class="nav-btn"
                 data-page="health"
@@ -319,14 +465,12 @@
                 🦠 Crop Health
             </button>
 
-
             <button
                 class="nav-btn"
                 data-page="diary"
             >
                 📓 Field Diary
             </button>
-
 
             <button
                 class="nav-btn"
@@ -336,7 +480,6 @@
             </button>
 
         </nav>
-
 
         <div class="sidebar-footer">
 
@@ -357,11 +500,9 @@
     </aside>
 
 
-
     <!-- MAIN -->
 
     <main class="main">
-
 
         <!-- TOP BAR -->
 
@@ -386,7 +527,6 @@
 
             </div>
 
-
             <div class="auth-user">
 
                 <div class="cloud-status">
@@ -396,7 +536,6 @@
                     Cloud Synced
 
                 </div>
-
 
                 <div>
 
@@ -417,10 +556,9 @@
         </header>
 
 
-
-        <!-- ============================= -->
-        <!-- DASHBOARD -->
-        <!-- ============================= -->
+        <!-- =================================================
+             DASHBOARD
+        ================================================== -->
 
         <section
             id="dashboard"
@@ -447,7 +585,6 @@
 
                 </div>
 
-
                 <button
                     class="primary-btn"
                     onclick="openModal('fieldModal')"
@@ -458,11 +595,9 @@
             </div>
 
 
-
             <!-- STATS -->
 
             <div class="stats">
-
 
                 <div class="stat-card">
 
@@ -483,7 +618,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="stat-card">
@@ -507,7 +641,6 @@
                 </div>
 
 
-
                 <div class="stat-card">
 
                     <div class="stat-icon">
@@ -527,7 +660,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="stat-card">
@@ -553,11 +685,9 @@
             </div>
 
 
-
             <!-- DASHBOARD CARDS -->
 
             <div class="grid-two">
-
 
                 <div class="card">
 
@@ -577,7 +707,6 @@
 
                     </div>
 
-
                     <div
                         id="cropDistribution"
                         class="crop-list"
@@ -590,7 +719,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="card">
@@ -611,7 +739,6 @@
 
                     </div>
 
-
                     <div id="recentActivity">
 
                         <div class="empty">
@@ -627,10 +754,9 @@
         </section>
 
 
-
-        <!-- ============================= -->
-        <!-- FIELD RECORDS -->
-        <!-- ============================= -->
+        <!-- =================================================
+             FIELD RECORDS
+        ================================================== -->
 
         <section
             id="fields"
@@ -650,7 +776,6 @@
                     </p>
 
                 </div>
-
 
                 <button
                     class="primary-btn"
@@ -686,6 +811,10 @@
                             </th>
 
                             <th>
+                                Farmer Code
+                            </th>
+
+                            <th>
                                 Crop
                             </th>
 
@@ -709,7 +838,6 @@
 
                     </thead>
 
-
                     <tbody id="fieldTable"></tbody>
 
                 </table>
@@ -719,10 +847,9 @@
         </section>
 
 
-
-        <!-- ============================= -->
-        <!-- FARMERS -->
-        <!-- ============================= -->
+        <!-- =================================================
+             FARMERS
+        ================================================== -->
 
         <section
             id="farmers"
@@ -738,11 +865,10 @@
                     </h2>
 
                     <p>
-                        Use farmer codes instead of unnecessary personal information.
+                        Farmer Code is used to connect all research records.
                     </p>
 
                 </div>
-
 
                 <button
                     class="primary-btn"
@@ -750,6 +876,17 @@
                 >
                     + Add Farmer
                 </button>
+
+            </div>
+
+
+            <div class="toolbar">
+
+                <input
+                    type="search"
+                    id="farmerSearch"
+                    placeholder="Search Farmer Code or Main Crop..."
+                >
 
             </div>
 
@@ -786,7 +923,6 @@
 
                     </thead>
 
-
                     <tbody id="farmerTable"></tbody>
 
                 </table>
@@ -796,10 +932,9 @@
         </section>
 
 
-
-        <!-- ============================= -->
-        <!-- CROP HEALTH -->
-        <!-- ============================= -->
+        <!-- =================================================
+             CROP HEALTH
+        ================================================== -->
 
         <section
             id="health"
@@ -819,7 +954,6 @@
                     </p>
 
                 </div>
-
 
                 <button
                     class="primary-btn"
@@ -841,6 +975,10 @@
 
                             <th>
                                 Date
+                            </th>
+
+                            <th>
+                                Farmer Code
                             </th>
 
                             <th>
@@ -871,7 +1009,6 @@
 
                     </thead>
 
-
                     <tbody id="healthTable"></tbody>
 
                 </table>
@@ -881,10 +1018,9 @@
         </section>
 
 
-
-        <!-- ============================= -->
-        <!-- FIELD DIARY -->
-        <!-- ============================= -->
+        <!-- =================================================
+             FIELD DIARY
+        ================================================== -->
 
         <section
             id="diary"
@@ -905,7 +1041,6 @@
 
                 </div>
 
-
                 <button
                     class="primary-btn"
                     onclick="openModal('diaryModal')"
@@ -924,10 +1059,9 @@
         </section>
 
 
-
-        <!-- ============================= -->
-        <!-- BACKUP -->
-        <!-- ============================= -->
+        <!-- =================================================
+             BACKUP
+        ================================================== -->
 
         <section
             id="backup"
@@ -953,7 +1087,6 @@
 
             <div class="backup-grid">
 
-
                 <div class="backup-card">
 
                     <div class="big-icon">
@@ -978,7 +1111,6 @@
                 </div>
 
 
-
                 <div class="backup-card">
 
                     <div class="big-icon">
@@ -1001,7 +1133,6 @@
                     >
 
                 </div>
-
 
 
                 <div class="backup-card danger">
@@ -1050,10 +1181,9 @@
 </div>
 
 
-
-<!-- ============================= -->
-<!-- FIELD MODAL -->
-<!-- ============================= -->
+<!-- =====================================================
+     FIELD MODAL
+===================================================== -->
 
 <div
     class="modal"
@@ -1082,7 +1212,6 @@
 
             <div class="form-grid">
 
-
                 <label>
 
                     Field ID *
@@ -1095,6 +1224,18 @@
 
                 </label>
 
+
+                <label>
+
+                    Farmer Code *
+
+                    <input
+                        id="fieldFarmerCode"
+                        required
+                        placeholder="F-001"
+                    >
+
+                </label>
 
 
                 <label>
@@ -1110,7 +1251,6 @@
                 </label>
 
 
-
                 <label>
 
                     Variety
@@ -1123,7 +1263,6 @@
                 </label>
 
 
-
                 <label>
 
                     Sowing / Transplanting Date
@@ -1134,7 +1273,6 @@
                     >
 
                 </label>
-
 
 
                 <label>
@@ -1160,7 +1298,6 @@
                 </label>
 
 
-
                 <label>
 
                     Field Size
@@ -1173,7 +1310,6 @@
                 </label>
 
 
-
                 <label>
 
                     Fertilizer / Manure
@@ -1183,7 +1319,6 @@
                     >
 
                 </label>
-
 
 
                 <label>
@@ -1225,10 +1360,9 @@
 </div>
 
 
-
-<!-- ============================= -->
-<!-- FARMER MODAL -->
-<!-- ============================= -->
+<!-- =====================================================
+     FARMER MODAL
+===================================================== -->
 
 <div
     class="modal"
@@ -1257,7 +1391,6 @@
 
             <div class="form-grid">
 
-
                 <label>
 
                     Farmer Code *
@@ -1271,17 +1404,16 @@
                 </label>
 
 
-
                 <label>
 
                     Main Crop
 
                     <input
                         id="farmerCrop"
+                        placeholder="Rice"
                     >
 
                 </label>
-
 
 
                 <label>
@@ -1290,10 +1422,10 @@
 
                     <input
                         id="seedSource"
+                        placeholder="Local / Market / Govt."
                     >
 
                 </label>
-
 
 
                 <label>
@@ -1327,6 +1459,7 @@
 
                 <textarea
                     id="farmerProblem"
+                    placeholder="Main problem faced by farmer..."
                 ></textarea>
 
             </label>
@@ -1338,6 +1471,7 @@
 
                 <textarea
                     id="farmerObservation"
+                    placeholder="Farmer's own observation..."
                 ></textarea>
 
             </label>
@@ -1357,10 +1491,43 @@
 </div>
 
 
+<!-- =====================================================
+     FARMER FULL RECORD MODAL
+===================================================== -->
 
-<!-- ============================= -->
-<!-- HEALTH MODAL -->
-<!-- ============================= -->
+<div
+    class="modal"
+    id="farmerDetailModal"
+>
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <h2>
+                Farmer Research Profile
+            </h2>
+
+            <button
+                type="button"
+                onclick="closeModal('farmerDetailModal')"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div id="farmerDetailContent">
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     HEALTH MODAL
+===================================================== -->
 
 <div
     class="modal"
@@ -1389,7 +1556,6 @@
 
             <div class="form-grid">
 
-
                 <label>
 
                     Date *
@@ -1402,6 +1568,18 @@
 
                 </label>
 
+
+                <label>
+
+                    Farmer Code *
+
+                    <input
+                        id="healthFarmerCode"
+                        required
+                        placeholder="F-001"
+                    >
+
+                </label>
 
 
                 <label>
@@ -1416,7 +1594,6 @@
                 </label>
 
 
-
                 <label>
 
                     Crop
@@ -1426,7 +1603,6 @@
                     >
 
                 </label>
-
 
 
                 <label>
@@ -1508,10 +1684,9 @@
 </div>
 
 
-
-<!-- ============================= -->
-<!-- DIARY MODAL -->
-<!-- ============================= -->
+<!-- =====================================================
+     DIARY MODAL
+===================================================== -->
 
 <div
     class="modal"
@@ -1538,7 +1713,6 @@
 
         <form id="diaryForm">
 
-
             <label>
 
                 Date *
@@ -1551,6 +1725,18 @@
 
             </label>
 
+
+            <label>
+
+                Farmer Code *
+
+                <input
+                    id="diaryFarmerCode"
+                    required
+                    placeholder="F-001"
+                >
+
+            </label>
 
 
             <label>
@@ -1565,7 +1751,6 @@
             </label>
 
 
-
             <label>
 
                 Observation *
@@ -1577,7 +1762,6 @@
                 ></textarea>
 
             </label>
-
 
 
             <label>
@@ -1606,6 +1790,7 @@
 
 
 <!-- APP JAVASCRIPT -->
+
 <script src="app.js"></script>
 
 </body>
