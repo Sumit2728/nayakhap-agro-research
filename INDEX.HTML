@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NayaKhap Agro Research</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">🌱</div>
+            <div>
+                <h2>NayaKhap</h2>
+                <span>Agro Research</span>
+            </div>
+        </div>
+
+        <nav>
+            <button class="nav-btn active" data-page="dashboard">
+                📊 Dashboard
+            </button>
+
+            <button class="nav-btn" data-page="fields">
+                🌾 Field Records
+            </button>
+
+            <button class="nav-btn" data-page="farmers">
+                👨‍🌾 Farmers
+            </button>
+
+            <button class="nav-btn" data-page="health">
+                🦠 Crop Health
+            </button>
+
+            <button class="nav-btn" data-page="diary">
+                📓 Field Diary
+            </button>
+
+            <button class="nav-btn" data-page="backup">
+                💾 Backup & Data
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <small>Research Location</small>
+            <strong>Nayakhap, Gidhaur</strong>
+            <span>Chatra, Jharkhand</span>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <header class="topbar">
+            <div>
+                <button id="mobileMenu" class="mobile-menu">☰</button>
+                <h1 id="pageTitle">Research Dashboard</h1>
+                <p>Local agricultural research data management</p>
+            </div>
+
+            <div class="status">
+                <span class="status-dot"></span>
+                Offline Ready
+            </div>
+        </header>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="page active">
+
+            <div class="welcome">
+                <div>
+                    <span class="eyebrow">FIELD RESEARCH 2026</span>
+                    <h2>NayaKhap Agricultural Research</h2>
+                    <p>
+                        Record, organize and analyze agricultural observations
+                        from your village.
+                    </p>
+                </div>
+
+                <button class="primary-btn" onclick="openModal('fieldModal')">
+                    + Add Field
+                </button>
+            </div>
+
+            <div class="stats">
+
+                <div class="stat-card">
+                    <div class="stat-icon">🌾</div>
+                    <div>
+                        <span>Fields</span>
+                        <strong id="fieldCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">👨‍🌾</div>
+                    <div>
+                        <span>Farmers</span>
+                        <strong id="farmerCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">🦠</div>
+                    <div>
+                        <span>Health Records</span>
+                        <strong id="healthCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📓</div>
+                    <div>
+                        <span>Diary Entries</span>
+                        <strong id="diaryCount">0</strong>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="grid-two">
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Crop Distribution</h3>
+                            <p>Crops recorded in your fields</p>
+                        </div>
+                    </div>
+
+                    <div id="cropDistribution" class="crop-list">
+                        <div class="empty">No field data yet.</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Recent Activity</h3>
+                            <p>Latest research observations</p>
+                        </div>
+                    </div>
+
+                    <div id="recentActivity">
+                        <div class="empty">No activity yet.</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- FIELDS -->
+        <section id="fields" class="page">
+
+            <div class="section-header">
+                <div>
+                    <h2>Field Records</h2>
+                    <p>Maintain records of agricultural fields.</p>
+                </div>
+
+                <button class="primary-btn" onclick="openModal('fieldModal')">
+                    + Add Field
+                </button>
+            </div>
+
+            <div class="toolbar">
+                <input
+                    type="search"
+                    id="fieldSearch"
+                    placeholder="Search field, crop or variety..."
+                >
+            </div>
+
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field ID</th>
+                            <th>Crop</th>
+                            <th>Variety</th>
+                            <th>Water</th>
+                            <th>Sowing Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="fieldTable"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- FARMERS -->
+        <section id="farmers" class="page">
+
+            <div class="section-header">
+                <div>
+                    <h2>Farmer Records</h2>
+                    <p>Use farmer codes instead of unnecessary personal information.</p>
+                </div>
+
+                <button class="primary-btn" onclick="openModal('farmerModal')">
+                    + Add Farmer
+                </button>
+            </div>
+
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Farmer Code</th>
+                            <th>Main Crop</th>
+                            <th>Seed Source</th>
+                            <th>Irrigation</th>
+                            <th>Main Problem</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="farmerTable"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- HEALTH -->
+        <section id="health" class="page">
+
+            <div class="section-header">
+                <div>
+                    <h2>Crop Health</h2>
+                    <p>Document symptoms, pests and crop-health observations.</p>
+                </div>
+
+                <button class="primary-btn" onclick="openModal('healthModal')">
+                    + Add Observation
+                </button>
+            </div>
+
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Field</th>
+                            <th>Crop</th>
+                            <th>Symptom</th>
+                            <th>Severity</th>
+                            <th>Identification</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="healthTable"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- DIARY -->
+        <section id="diary" class="page">
+
+            <div class="section-header">
+                <div>
+                    <h2>Field Diary</h2>
+                    <p>Record observations during field visits.</p>
+                </div>
+
+                <button class="primary-btn" onclick="openModal('diaryModal')">
+                    + New Entry
+                </button>
+            </div>
+
+            <div id="diaryList" class="diary-grid"></div>
+
+        </section>
+
+        <!-- BACKUP -->
+        <section id="backup" class="page">
+
+            <div class="section-header">
+                <div>
+                    <h2>Backup & Data</h2>
+                    <p>Protect your research data.</p>
+                </div>
+            </div>
+
+            <div class="backup-grid">
+
+                <div class="backup-card">
+                    <div class="big-icon">⬇️</div>
+                    <h3>Export Backup</h3>
+                    <p>
+                        Download all your research data as a JSON file.
+                    </p>
+
+                    <button class="primary-btn" onclick="exportBackup()">
+                        Download Backup
+                    </button>
+                </div>
+
+                <div class="backup-card">
+                    <div class="big-icon">⬆️</div>
+                    <h3>Restore Backup</h3>
+                    <p>
+                        Restore your previous research database.
+                    </p>
+
+                    <input
+                        type="file"
+                        id="restoreFile"
+                        accept=".json"
+                        onchange="restoreBackup(event)"
+                    >
+                </div>
+
+                <div class="backup-card danger">
+                    <div class="big-icon">⚠️</div>
+                    <h3>Delete All Data</h3>
+                    <p>
+                        Permanently delete all locally stored research data.
+                    </p>
+
+                    <button class="danger-btn" onclick="deleteAllData()">
+                        Delete Everything
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="security-note">
+                <strong>🔐 Important</strong>
+                <p>
+                    Your current version stores information locally in this
+                    browser. Regularly download a backup file and keep a copy
+                    on another device or drive.
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+</div>
+
+
+<!-- FIELD MODAL -->
+<div class="modal" id="fieldModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <h2>Add Field Record</h2>
+            <button onclick="closeModal('fieldModal')">×</button>
+        </div>
+
+        <form id="fieldForm">
+
+            <div class="form-grid">
+
+                <label>
+                    Field ID *
+                    <input id="fieldId" required placeholder="NK-GID-001">
+                </label>
+
+                <label>
+                    Crop *
+                    <input id="fieldCrop" required placeholder="Rice">
+                </label>
+
+                <label>
+                    Variety
+                    <input id="fieldVariety" placeholder="Variety name">
+                </label>
+
+                <label>
+                    Sowing / Transplanting Date
+                    <input type="date" id="fieldDate">
+                </label>
+
+                <label>
+                    Irrigation
+                    <select id="fieldWater">
+                        <option>Rain-fed</option>
+                        <option>Irrigated</option>
+                        <option>Partially irrigated</option>
+                    </select>
+                </label>
+
+                <label>
+                    Field Size
+                    <input id="fieldSize" placeholder="Approx. acres">
+                </label>
+
+                <label>
+                    Fertilizer / Manure
+                    <input id="fieldFertilizer">
+                </label>
+
+                <label>
+                    Expected / Actual Yield
+                    <input id="fieldYield" placeholder="kg/acre">
+                </label>
+
+            </div>
+
+            <label>
+                Notes
+                <textarea id="fieldNotes"></textarea>
+            </label>
+
+            <button class="primary-btn full" type="submit">
+                Save Field
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+
+<!-- FARMER MODAL -->
+<div class="modal" id="farmerModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <h2>Add Farmer Record</h2>
+            <button onclick="closeModal('farmerModal')">×</button>
+        </div>
+
+        <form id="farmerForm">
+
+            <div class="form-grid">
+
+                <label>
+                    Farmer Code *
+                    <input id="farmerCode" required placeholder="F-001">
+                </label>
+
+                <label>
+                    Main Crop
+                    <input id="farmerCrop">
+                </label>
+
+                <label>
+                    Seed Source
+                    <input id="seedSource">
+                </label>
+
+                <label>
+                    Irrigation
+                    <select id="farmerWater">
+                        <option>Rain-fed</option>
+                        <option>Irrigated</option>
+                        <option>Partially irrigated</option>
+                    </select>
+                </label>
+
+            </div>
+
+            <label>
+                Major Farming Problem
+                <textarea id="farmerProblem"></textarea>
+            </label>
+
+            <label>
+                Farmer's Observation
+                <textarea id="farmerObservation"></textarea>
+            </label>
+
+            <button class="primary-btn full" type="submit">
+                Save Farmer
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+
+<!-- HEALTH MODAL -->
+<div class="modal" id="healthModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <h2>Crop Health Observation</h2>
+            <button onclick="closeModal('healthModal')">×</button>
+        </div>
+
+        <form id="healthForm">
+
+            <div class="form-grid">
+
+                <label>
+                    Date *
+                    <input type="date" id="healthDate" required>
+                </label>
+
+                <label>
+                    Field ID
+                    <input id="healthField" placeholder="NK-GID-001">
+                </label>
+
+                <label>
+                    Crop
+                    <input id="healthCrop">
+                </label>
+
+                <label>
+                    Severity
+                    <select id="healthSeverity">
+                        <option>Low</option>
+                        <option>Moderate</option>
+                        <option>High</option>
+                        <option>Severe</option>
+                    </select>
+                </label>
+
+            </div>
+
+            <label>
+                Symptoms *
+                <textarea
+                    id="healthSymptoms"
+                    required
+                    placeholder="Describe what you observed..."
+                ></textarea>
+            </label>
+
+            <label>
+                Initial Identification
+                <input
+                    id="healthIdentification"
+                    placeholder="Leave blank if uncertain"
+                >
+            </label>
+
+            <label>
+                Management / Treatment Observed
+                <textarea id="healthTreatment"></textarea>
+            </label>
+
+            <button class="primary-btn full" type="submit">
+                Save Observation
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+
+<!-- DIARY MODAL -->
+<div class="modal" id="diaryModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <h2>Field Diary Entry</h2>
+            <button onclick="closeModal('diaryModal')">×</button>
+        </div>
+
+        <form id="diaryForm">
+
+            <label>
+                Date *
+                <input type="date" id="diaryDate" required>
+            </label>
+
+            <label>
+                Field ID
+                <input id="diaryField" placeholder="NK-GID-001">
+            </label>
+
+            <label>
+                Observation *
+                <textarea
+                    id="diaryObservation"
+                    required
+                    placeholder="What did you observe today?"
+                ></textarea>
+            </label>
+
+            <label>
+                Weather / Environmental Conditions
+                <textarea id="diaryWeather"></textarea>
+            </label>
+
+            <button class="primary-btn full" type="submit">
+                Save Diary Entry
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
