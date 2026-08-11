@@ -1,17 +1,14 @@
 // ======================================================
 // NAYAKHAP AGRO RESEARCH
-// SUPABASE CLOUD VERSION - DASHBOARD 2.0
-// ======================================================
-
-// ======================================================
-// SUPABASE CONFIG
+// SUPABASE CLOUD VERSION
+// COMPLETE APP.JS
 // ======================================================
 
 const SUPABASE_URL =
     "https://cuhffitgrgewewoqdhgn.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-    "sb_publishable_d9g-n2-Q3jEpW447fT-hXA_RW29I84n";
+    "sb_publishable_d9g-n2-Q3jEpW447fT-hXA_RW29I84nK";
 
 const supabaseClient =
     window.supabase.createClient(
@@ -30,8 +27,6 @@ let farmers = [];
 let observations = [];
 let diaryEntries = [];
 
-let dashboardInitialized = false;
-
 // ======================================================
 // DOM READY
 // ======================================================
@@ -42,7 +37,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupAuth();
     setupForms();
     setupSearch();
-    setupDashboardEffects();
 
     await checkAuth();
 
@@ -365,120 +359,110 @@ async function showApp() {
 
     }
 
-    updateConnectionStatus();
-
-    updateGreeting();
-
     await loadAllData();
+
+    updateDashboard();
 
 }
 
 // ======================================================
-// LOAD CLOUD DATA
+// LOAD ALL DATA
 // ======================================================
 
 async function loadAllData() {
 
     if (!currentUser) return;
 
-    try {
+    const [
+        fieldsResponse,
+        farmersResponse,
+        observationsResponse,
+        diaryResponse
+    ] = await Promise.all([
 
-        const [
-            fieldsResponse,
-            farmersResponse,
-            observationsResponse,
-            diaryResponse
-        ] = await Promise.all([
+        supabaseClient
+            .from("fields")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            }),
 
-            supabaseClient
-                .from("fields")
-                .select("*")
-                .eq("user_id", currentUser.id)
-                .order("created_at", {
-                    ascending: false
-                }),
+        supabaseClient
+            .from("farmers")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            }),
 
-            supabaseClient
-                .from("farmers")
-                .select("*")
-                .eq("user_id", currentUser.id)
-                .order("created_at", {
-                    ascending: false
-                }),
+        supabaseClient
+            .from("crop_observations")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            }),
 
-            supabaseClient
-                .from("crop_observations")
-                .select("*")
-                .eq("user_id", currentUser.id)
-                .order("created_at", {
-                    ascending: false
-                }),
+        supabaseClient
+            .from("field_diary")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", {
+                ascending: false
+            })
 
-            supabaseClient
-                .from("field_diary")
-                .select("*")
-                .eq("user_id", currentUser.id)
-                .order("created_at", {
-                    ascending: false
-                })
+    ]);
 
-        ]);
-
-        if (fieldsResponse.error) {
-            console.error(
-                "Fields:",
-                fieldsResponse.error
-            );
-        }
-
-        if (farmersResponse.error) {
-            console.error(
-                "Farmers:",
-                farmersResponse.error
-            );
-        }
-
-        if (observationsResponse.error) {
-            console.error(
-                "Observations:",
-                observationsResponse.error
-            );
-        }
-
-        if (diaryResponse.error) {
-            console.error(
-                "Diary:",
-                diaryResponse.error
-            );
-        }
-
-        fields =
-            fieldsResponse.data || [];
-
-        farmers =
-            farmersResponse.data || [];
-
-        observations =
-            observationsResponse.data || [];
-
-        diaryEntries =
-            diaryResponse.data || [];
-
-        renderAll();
-
-    } catch (error) {
+    if (fieldsResponse.error) {
 
         console.error(
-            "Cloud data error:",
-            error
-        );
-
-        showToast(
-            "Could not refresh cloud data.",
-            "error"
+            "Fields:",
+            fieldsResponse.error
         );
 
     }
+
+    if (farmersResponse.error) {
+
+        console.error(
+            "Farmers:",
+            farmersResponse.error
+        );
+
+    }
+
+    if (observationsResponse.error) {
+
+        console.error(
+            "Observations:",
+            observationsResponse.error
+        );
+
+    }
+
+    if (diaryResponse.error) {
+
+        console.error(
+            "Diary:",
+            diaryResponse.error
+        );
+
+    }
+
+    fields =
+        fieldsResponse.data || [];
+
+    farmers =
+        farmersResponse.data || [];
+
+    observations =
+        observationsResponse.data || [];
+
+    diaryEntries =
+        diaryResponse.data || [];
+
+    renderAll();
 
 }
 
@@ -540,14 +524,6 @@ function showPage(page) {
 
         target.classList.add("active");
 
-        target.classList.add("page-enter");
-
-        setTimeout(() => {
-
-            target.classList.remove("page-enter");
-
-        }, 450);
-
     }
 
     document
@@ -589,7 +565,8 @@ function showPage(page) {
     if (pageTitle) {
 
         pageTitle.textContent =
-            titles[page] || "Research Dashboard";
+            titles[page] ||
+            "Research Dashboard";
 
     }
 
@@ -637,22 +614,14 @@ function setupForms() {
     const healthDate =
         document.getElementById("healthDate");
 
-    if (healthDate) {
-
-        healthDate.value =
-            today();
-
-    }
-
     const diaryDate =
         document.getElementById("diaryDate");
 
-    if (diaryDate) {
+    if (healthDate)
+        healthDate.value = today();
 
-        diaryDate.value =
-            today();
-
-    }
+    if (diaryDate)
+        diaryDate.value = today();
 
 }
 
@@ -674,35 +643,59 @@ async function saveField(event) {
     const record = {
 
         field_name:
-            document.getElementById("fieldId").value.trim(),
+            document
+                .getElementById("fieldId")
+                .value
+                .trim(),
 
         crop:
-            document.getElementById("fieldCrop").value.trim(),
+            document
+                .getElementById("fieldCrop")
+                .value
+                .trim(),
 
         variety:
-            document.getElementById("fieldVariety").value.trim(),
+            document
+                .getElementById("fieldVariety")
+                .value
+                .trim(),
 
         sowing_date:
-            document.getElementById("fieldDate").value || null,
+            document
+                .getElementById("fieldDate")
+                .value ||
+            null,
 
         irrigation_source:
-            document.getElementById("fieldWater").value,
+            document
+                .getElementById("fieldWater")
+                .value,
 
         area:
             parseNumber(
-                document.getElementById("fieldSize").value
+                document
+                    .getElementById("fieldSize")
+                    .value
             ),
 
         fertilizer:
-            document.getElementById("fieldFertilizer").value.trim(),
+            document
+                .getElementById("fieldFertilizer")
+                .value
+                .trim(),
 
         yield_value:
             parseNumber(
-                document.getElementById("fieldYield").value
+                document
+                    .getElementById("fieldYield")
+                    .value
             ),
 
         notes:
-            document.getElementById("fieldNotes").value.trim(),
+            document
+                .getElementById("fieldNotes")
+                .value
+                .trim(),
 
         user_id:
             currentUser.id
@@ -729,11 +722,6 @@ async function saveField(event) {
 
     event.target.reset();
 
-    showToast(
-        "🌱 Field record saved successfully!",
-        "success"
-    );
-
     await loadAllData();
 
 }
@@ -746,26 +734,78 @@ async function saveFarmer(event) {
 
     event.preventDefault();
 
-    if (!currentUser) return;
+    if (!currentUser) {
+
+        alert("Please login first.");
+
+        return;
+    }
+
+    const farmerCode =
+        document
+            .getElementById("farmerCode")
+            .value
+            .trim()
+            .toUpperCase();
+
+    if (!farmerCode) {
+
+        alert("Farmer Code is required.");
+
+        return;
+    }
+
+    // Prevent duplicate farmer codes
+    const existingFarmer =
+        farmers.find(
+            farmer =>
+                String(farmer.farmer_code || "")
+                    .toUpperCase() === farmerCode
+        );
+
+    if (existingFarmer) {
+
+        alert(
+            "This Farmer Code already exists.\n\nUse the existing code for this farmer's related records."
+        );
+
+        return;
+    }
 
     const record = {
 
         farmer_code:
-            document.getElementById("farmerCode").value.trim(),
+            farmerCode,
 
         main_crop:
-            document.getElementById("farmerCrop").value.trim(),
+            document
+                .getElementById("farmerCrop")
+                .value
+                .trim(),
 
         seed_source:
-            document.getElementById("seedSource").value.trim(),
+            document
+                .getElementById("seedSource")
+                .value
+                .trim(),
 
         farming_method:
-            document.getElementById("farmerWater").value,
+            document
+                .getElementById("farmerWater")
+                .value,
 
         notes:
             [
-                document.getElementById("farmerProblem").value.trim(),
-                document.getElementById("farmerObservation").value.trim()
+                document
+                    .getElementById("farmerProblem")
+                    .value
+                    .trim(),
+
+                document
+                    .getElementById("farmerObservation")
+                    .value
+                    .trim()
+
             ]
             .filter(Boolean)
             .join(" | "),
@@ -795,11 +835,6 @@ async function saveFarmer(event) {
 
     event.target.reset();
 
-    showToast(
-        "👨‍🌾 Farmer record added!",
-        "success"
-    );
-
     await loadAllData();
 
 }
@@ -817,26 +852,45 @@ async function saveHealthObservation(event) {
     const record = {
 
         observation_date:
-            document.getElementById("healthDate").value,
+            document
+                .getElementById("healthDate")
+                .value,
 
         field_code:
-            document.getElementById("healthField").value.trim(),
+            document
+                .getElementById("healthField")
+                .value
+                .trim(),
 
         crop_name:
-            document.getElementById("healthCrop").value.trim() ||
+            document
+                .getElementById("healthCrop")
+                .value
+                .trim() ||
             "Not specified",
 
         disease_symptoms:
-            document.getElementById("healthSymptoms").value.trim(),
+            document
+                .getElementById("healthSymptoms")
+                .value
+                .trim(),
 
         crop_stage:
-            document.getElementById("healthIdentification").value.trim(),
+            document
+                .getElementById("healthIdentification")
+                .value
+                .trim(),
 
         treatment:
-            document.getElementById("healthTreatment").value.trim(),
+            document
+                .getElementById("healthTreatment")
+                .value
+                .trim(),
 
         pest_observation:
-            document.getElementById("healthSeverity").value,
+            document
+                .getElementById("healthSeverity")
+                .value,
 
         user_id:
             currentUser.id
@@ -866,11 +920,6 @@ async function saveHealthObservation(event) {
     document.getElementById("healthDate").value =
         today();
 
-    showToast(
-        "🔬 Crop-health observation saved!",
-        "success"
-    );
-
     await loadAllData();
 
 }
@@ -888,19 +937,30 @@ async function saveDiaryEntry(event) {
     const record = {
 
         entry_date:
-            document.getElementById("diaryDate").value,
+            document
+                .getElementById("diaryDate")
+                .value,
 
         field_code:
-            document.getElementById("diaryField").value.trim(),
+            document
+                .getElementById("diaryField")
+                .value
+                .trim(),
 
         activity:
             "Field observation",
 
         observation:
-            document.getElementById("diaryObservation").value.trim(),
+            document
+                .getElementById("diaryObservation")
+                .value
+                .trim(),
 
         weather_condition:
-            document.getElementById("diaryWeather").value.trim(),
+            document
+                .getElementById("diaryWeather")
+                .value
+                .trim(),
 
         user_id:
             currentUser.id
@@ -930,11 +990,6 @@ async function saveDiaryEntry(event) {
     document.getElementById("diaryDate").value =
         today();
 
-    showToast(
-        "📔 Field diary entry saved!",
-        "success"
-    );
-
     await loadAllData();
 
 }
@@ -956,7 +1011,7 @@ function setupSearch() {
 }
 
 // ======================================================
-// RENDER EVERYTHING
+// RENDER ALL
 // ======================================================
 
 function renderAll() {
@@ -986,8 +1041,10 @@ function renderFields() {
 
     const search =
         (
-            document.getElementById("fieldSearch")
-                ?.value || ""
+            document
+                .getElementById("fieldSearch")
+                ?.value ||
+            ""
         )
         .toLowerCase();
 
@@ -1001,9 +1058,9 @@ function renderFields() {
                 field.variety
 
             ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
 
             return text.includes(search);
 
@@ -1014,7 +1071,7 @@ function renderFields() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="empty">
-                    🌱 No field records found.
+                    No field records found.
                 </td>
             </tr>
         `;
@@ -1023,47 +1080,58 @@ function renderFields() {
     }
 
     tbody.innerHTML =
-        filtered.map(field => `
+        filtered
+            .map(field => `
 
-            <tr class="table-row-animated">
+                <tr>
 
-                <td>
-                    <strong>
-                        ${escapeHtml(field.field_name || "-")}
-                    </strong>
-                </td>
+                    <td>
+                        <strong>
+                            ${escapeHtml(
+                                field.field_name || "-"
+                            )}
+                        </strong>
+                    </td>
 
-                <td>
-                    ${escapeHtml(field.crop || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            field.crop || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(field.variety || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            field.variety || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(field.irrigation_source || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            field.irrigation_source || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${formatDate(field.sowing_date)}
-                </td>
+                    <td>
+                        ${formatDate(
+                            field.sowing_date
+                        )}
+                    </td>
 
-                <td>
+                    <td>
 
-                    <button
-                        class="delete-btn"
-                        onclick="deleteField('${field.id}')"
-                    >
-                        Delete
-                    </button>
+                        <button
+                            class="delete-btn"
+                            onclick="deleteField('${field.id}')"
+                        >
+                            Delete
+                        </button>
 
-                </td>
+                    </td>
 
-            </tr>
+                </tr>
 
-        `)
-        .join("");
+            `)
+            .join("");
 
 }
 
@@ -1083,7 +1151,7 @@ function renderFarmers() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="empty">
-                    👨‍🌾 No farmer records found.
+                    No farmer records found.
                 </td>
             </tr>
         `;
@@ -1092,43 +1160,66 @@ function renderFarmers() {
     }
 
     tbody.innerHTML =
-        farmers.map(farmer => `
+        farmers
+            .map(farmer => {
 
-            <tr class="table-row-animated">
+                const linkedFields =
+                    fields.filter(field =>
+                        String(
+                            field.farmer_code || ""
+                        ).toUpperCase() ===
+                        String(
+                            farmer.farmer_code || ""
+                        ).toUpperCase()
+                    ).length;
 
-                <td>
-                    <strong>
-                        ${escapeHtml(farmer.farmer_code || "-")}
-                    </strong>
-                </td>
+                return `
 
-                <td>
-                    ${escapeHtml(farmer.main_crop || "-")}
-                </td>
+                    <tr>
 
-                <td>
-                    ${escapeHtml(farmer.seed_source || "-")}
-                </td>
+                        <td>
+                            <strong>
+                                ${escapeHtml(
+                                    farmer.farmer_code || "-"
+                                )}
+                            </strong>
+                        </td>
 
-                <td>
-                    ${escapeHtml(farmer.farming_method || "-")}
-                </td>
+                        <td>
+                            ${escapeHtml(
+                                farmer.main_crop || "-"
+                            )}
+                        </td>
 
-                <td>
+                        <td>
+                            ${escapeHtml(
+                                farmer.seed_source || "-"
+                            )}
+                        </td>
 
-                    <button
-                        class="delete-btn"
-                        onclick="deleteFarmer('${farmer.id}')"
-                    >
-                        Delete
-                    </button>
+                        <td>
+                            ${escapeHtml(
+                                farmer.farming_method || "-"
+                            )}
+                        </td>
 
-                </td>
+                        <td>
 
-            </tr>
+                            <button
+                                class="delete-btn"
+                                onclick="deleteFarmer('${farmer.id}')"
+                            >
+                                Delete
+                            </button>
 
-        `)
-        .join("");
+                        </td>
+
+                    </tr>
+
+                `;
+
+            })
+            .join("");
 
 }
 
@@ -1148,7 +1239,7 @@ function renderHealth() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="empty">
-                    🔬 No crop-health observations yet.
+                    No crop-health observations yet.
                 </td>
             </tr>
         `;
@@ -1157,49 +1248,62 @@ function renderHealth() {
     }
 
     tbody.innerHTML =
-        observations.map(item => `
+        observations
+            .map(item => `
 
-            <tr class="table-row-animated">
+                <tr>
 
-                <td>
-                    ${formatDate(item.observation_date)}
-                </td>
+                    <td>
+                        ${formatDate(
+                            item.observation_date
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(item.field_code || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            item.field_code || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(item.crop_name || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            item.crop_name || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(item.disease_symptoms || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            item.disease_symptoms || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(item.pest_observation || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            item.pest_observation || "-"
+                        )}
+                    </td>
 
-                <td>
-                    ${escapeHtml(item.crop_stage || "-")}
-                </td>
+                    <td>
+                        ${escapeHtml(
+                            item.crop_stage || "-"
+                        )}
+                    </td>
 
-                <td>
+                    <td>
 
-                    <button
-                        class="delete-btn"
-                        onclick="deleteObservation('${item.id}')"
-                    >
-                        Delete
-                    </button>
+                        <button
+                            class="delete-btn"
+                            onclick="deleteObservation('${item.id}')"
+                        >
+                            Delete
+                        </button>
 
-                </td>
+                    </td>
 
-            </tr>
+                </tr>
 
-        `)
-        .join("");
+            `)
+            .join("");
 
 }
 
@@ -1218,7 +1322,7 @@ function renderDiary() {
 
         container.innerHTML = `
             <div class="empty">
-                📔 No diary entries yet.
+                No diary entries yet.
             </div>
         `;
 
@@ -1226,65 +1330,68 @@ function renderDiary() {
     }
 
     container.innerHTML =
-        diaryEntries.map(entry => `
+        diaryEntries
+            .map(entry => `
 
-            <div class="diary-card animated-card">
+                <div class="diary-card">
 
-                <div class="diary-date">
+                    <div class="diary-date">
 
-                    ${formatDate(entry.entry_date)}
+                        ${formatDate(
+                            entry.entry_date
+                        )}
 
-                </div>
+                    </div>
 
-                <h3>
-
-                    ${escapeHtml(
-                        entry.field_code ||
-                        "General Field Visit"
-                    )}
-
-                </h3>
-
-                <p>
-
-                    ${escapeHtml(
-                        entry.observation || "-"
-                    )}
-
-                </p>
-
-                ${
-                    entry.weather_condition
-                    ?
-                    `
-                    <p style="margin-top:10px">
-
-                        <strong>
-                            Weather:
-                        </strong>
+                    <h3>
 
                         ${escapeHtml(
-                            entry.weather_condition
+                            entry.field_code ||
+                            "General Field Visit"
+                        )}
+
+                    </h3>
+
+                    <p>
+
+                        ${escapeHtml(
+                            entry.observation || "-"
                         )}
 
                     </p>
-                    `
-                    :
-                    ""
-                }
 
-                <button
-                    class="delete-btn"
-                    style="margin-top:12px"
-                    onclick="deleteDiary('${entry.id}')"
-                >
-                    Delete
-                </button>
+                    ${
+                        entry.weather_condition
+                        ?
+                        `
+                            <p style="margin-top:10px">
 
-            </div>
+                                <strong>
+                                    Weather:
+                                </strong>
 
-        `)
-        .join("");
+                                ${escapeHtml(
+                                    entry.weather_condition
+                                )}
+
+                            </p>
+                        `
+                        :
+                        ""
+                    }
+
+                    <button
+                        class="delete-btn"
+                        style="margin-top:12px"
+                        onclick="deleteDiary('${entry.id}')"
+                    >
+                        Delete
+                    </button>
+
+                </div>
+
+            `)
+            .join("");
 
 }
 
@@ -1294,85 +1401,37 @@ function renderDiary() {
 
 function updateDashboard() {
 
-    animateCounter(
-        "fieldCount",
-        fields.length
-    );
+    const fieldCount =
+        document.getElementById("fieldCount");
 
-    animateCounter(
-        "farmerCount",
-        farmers.length
-    );
+    const farmerCount =
+        document.getElementById("farmerCount");
 
-    animateCounter(
-        "healthCount",
-        observations.length
-    );
+    const healthCount =
+        document.getElementById("healthCount");
 
-    animateCounter(
-        "diaryCount",
-        diaryEntries.length
-    );
+    const diaryCount =
+        document.getElementById("diaryCount");
+
+    if (fieldCount)
+        fieldCount.textContent =
+            fields.length;
+
+    if (farmerCount)
+        farmerCount.textContent =
+            farmers.length;
+
+    if (healthCount)
+        healthCount.textContent =
+            observations.length;
+
+    if (diaryCount)
+        diaryCount.textContent =
+            diaryEntries.length;
 
     renderCropDistribution();
 
     renderRecentActivity();
-
-    renderResearchInsights();
-
-}
-
-// ======================================================
-// ANIMATED COUNTER
-// ======================================================
-
-function animateCounter(id, target) {
-
-    const element =
-        document.getElementById(id);
-
-    if (!element) return;
-
-    const start =
-        Number(element.textContent) || 0;
-
-    const duration = 800;
-
-    const startTime =
-        performance.now();
-
-    function update(time) {
-
-        const progress =
-            Math.min(
-                (time - startTime) / duration,
-                1
-            );
-
-        const eased =
-            1 - Math.pow(
-                1 - progress,
-                3
-            );
-
-        const value =
-            Math.round(
-                start +
-                (target - start) * eased
-            );
-
-        element.textContent =
-            value;
-
-        if (progress < 1) {
-
-            requestAnimationFrame(update);
-
-        }
-
-    }
-
-    requestAnimationFrame(update);
 
 }
 
@@ -1383,7 +1442,9 @@ function animateCounter(id, target) {
 function renderCropDistribution() {
 
     const container =
-        document.getElementById("cropDistribution");
+        document.getElementById(
+            "cropDistribution"
+        );
 
     if (!container) return;
 
@@ -1391,7 +1452,7 @@ function renderCropDistribution() {
 
         container.innerHTML = `
             <div class="empty">
-                🌱 No field data yet.
+                No field data yet.
             </div>
         `;
 
@@ -1403,7 +1464,7 @@ function renderCropDistribution() {
     fields.forEach(field => {
 
         const crop =
-            field.crop?.trim() ||
+            field.crop ||
             "Unknown";
 
         counts[crop] =
@@ -1411,65 +1472,31 @@ function renderCropDistribution() {
 
     });
 
-    const sorted =
-        Object.entries(counts)
-            .sort(
-                (a, b) =>
-                    b[1] - a[1]
-            );
-
-    const max =
-        sorted[0]?.[1] || 1;
-
     container.innerHTML =
-        sorted
-            .map(([crop, count]) => {
+        Object.entries(counts)
+            .map(([crop, count]) => `
 
-                const percentage =
-                    Math.round(
-                        (count / fields.length) *
-                        100
-                    );
+                <div
+                    style="
+                        display:flex;
+                        justify-content:space-between;
+                        padding:10px 0;
+                        border-bottom:1px solid var(--border);
+                    "
+                >
 
-                const width =
-                    Math.max(
-                        8,
-                        (count / max) * 100
-                    );
+                    <span>
+                        🌱
+                        ${escapeHtml(crop)}
+                    </span>
 
-                return `
+                    <strong>
+                        ${count}
+                    </strong>
 
-                    <div class="crop-stat">
+                </div>
 
-                        <div class="crop-stat-top">
-
-                            <span>
-                                🌱 ${escapeHtml(crop)}
-                            </span>
-
-                            <strong>
-                                ${count}
-                                <small>
-                                    (${percentage}%)
-                                </small>
-                            </strong>
-
-                        </div>
-
-                        <div class="crop-progress">
-
-                            <div
-                                class="crop-progress-fill"
-                                style="width:${width}%"
-                            ></div>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            })
+            `)
             .join("");
 
 }
@@ -1481,13 +1508,16 @@ function renderCropDistribution() {
 function renderRecentActivity() {
 
     const container =
-        document.getElementById("recentActivity");
+        document.getElementById(
+            "recentActivity"
+        );
 
     if (!container) return;
 
     const activities = [];
 
-    fields.slice(0, 5)
+    fields
+        .slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1495,17 +1525,17 @@ function renderRecentActivity() {
                 date:
                     item.created_at,
 
-                icon:
-                    "🌱",
-
                 text:
-                    `Field added: ${item.field_name || "Unnamed field"}`
+                    `Field added: ${
+                        item.field_name || "-"
+                    }`
 
             });
 
         });
 
-    farmers.slice(0, 5)
+    farmers
+        .slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1513,17 +1543,17 @@ function renderRecentActivity() {
                 date:
                     item.created_at,
 
-                icon:
-                    "👨‍🌾",
-
                 text:
-                    `Farmer added: ${item.farmer_code || "New farmer"}`
+                    `Farmer added: ${
+                        item.farmer_code || "-"
+                    }`
 
             });
 
         });
 
-    observations.slice(0, 5)
+    observations
+        .slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1531,17 +1561,17 @@ function renderRecentActivity() {
                 date:
                     item.created_at,
 
-                icon:
-                    "🔬",
-
                 text:
-                    `Crop observation: ${item.crop_name || "Crop"}`
+                    `Crop observation: ${
+                        item.crop_name || "-"
+                    }`
 
             });
 
         });
 
-    diaryEntries.slice(0, 5)
+    diaryEntries
+        .slice(0, 3)
         .forEach(item => {
 
             activities.push({
@@ -1549,11 +1579,11 @@ function renderRecentActivity() {
                 date:
                     item.created_at,
 
-                icon:
-                    "📔",
-
                 text:
-                    `Diary entry: ${item.field_code || "Field visit"}`
+                    `Diary entry: ${
+                        item.field_code ||
+                        "Field visit"
+                    }`
 
             });
 
@@ -1569,7 +1599,7 @@ function renderRecentActivity() {
 
         container.innerHTML = `
             <div class="empty">
-                📊 No research activity yet.
+                No activity yet.
             </div>
         `;
 
@@ -1578,24 +1608,33 @@ function renderRecentActivity() {
 
     container.innerHTML =
         activities
-            .slice(0, 8)
+            .slice(0, 6)
             .map(item => `
 
-                <div class="activity-item">
+                <div
+                    style="
+                        padding:10px 0;
+                        border-bottom:1px solid var(--border);
+                        font-size:13px;
+                    "
+                >
 
-                    <div class="activity-icon">
-                        ${item.icon}
-                    </div>
+                    <strong>
+                        ${escapeHtml(
+                            item.text
+                        )}
+                    </strong>
 
-                    <div class="activity-content">
+                    <div
+                        style="
+                            color:var(--muted);
+                            margin-top:4px;
+                        "
+                    >
 
-                        <strong>
-                            ${escapeHtml(item.text)}
-                        </strong>
-
-                        <span>
-                            ${formatDateTime(item.date)}
-                        </span>
+                        ${formatDateTime(
+                            item.date
+                        )}
 
                     </div>
 
@@ -1603,99 +1642,6 @@ function renderRecentActivity() {
 
             `)
             .join("");
-
-}
-
-// ======================================================
-// RESEARCH INSIGHTS
-// ======================================================
-
-function renderResearchInsights() {
-
-    const container =
-        document.getElementById("researchInsights");
-
-    if (!container) return;
-
-    const totalArea =
-        fields.reduce(
-            (sum, field) =>
-                sum +
-                (Number(field.area) || 0),
-            0
-        );
-
-    const totalYield =
-        fields.reduce(
-            (sum, field) =>
-                sum +
-                (Number(field.yield_value) || 0),
-            0
-        );
-
-    const uniqueCrops =
-        new Set(
-            fields
-                .map(field =>
-                    field.crop?.trim()
-                )
-                .filter(Boolean)
-        ).size;
-
-    const latestObservation =
-        observations[0];
-
-    container.innerHTML = `
-
-        <div class="insight-item">
-
-            <span>🌾 Total Recorded Area</span>
-
-            <strong>
-                ${formatNumber(totalArea)}
-            </strong>
-
-        </div>
-
-        <div class="insight-item">
-
-            <span>🌱 Crop Diversity</span>
-
-            <strong>
-                ${uniqueCrops}
-                crop${uniqueCrops === 1 ? "" : "s"}
-            </strong>
-
-        </div>
-
-        <div class="insight-item">
-
-            <span>📦 Recorded Yield</span>
-
-            <strong>
-                ${formatNumber(totalYield)}
-            </strong>
-
-        </div>
-
-        <div class="insight-item">
-
-            <span>🔬 Latest Observation</span>
-
-            <strong>
-                ${
-                    latestObservation
-                    ? escapeHtml(
-                        latestObservation.crop_name ||
-                        "Recorded"
-                    )
-                    : "None"
-                }
-            </strong>
-
-        </div>
-
-    `;
 
 }
 
@@ -1715,7 +1661,10 @@ async function deleteField(id) {
         .from("fields")
         .delete()
         .eq("id", id)
-        .eq("user_id", currentUser.id);
+        .eq(
+            "user_id",
+            currentUser.id
+        );
 
     if (error) {
 
@@ -1723,11 +1672,6 @@ async function deleteField(id) {
 
         return;
     }
-
-    showToast(
-        "Field record deleted.",
-        "success"
-    );
 
     await loadAllData();
 
@@ -1749,7 +1693,10 @@ async function deleteFarmer(id) {
         .from("farmers")
         .delete()
         .eq("id", id)
-        .eq("user_id", currentUser.id);
+        .eq(
+            "user_id",
+            currentUser.id
+        );
 
     if (error) {
 
@@ -1758,17 +1705,12 @@ async function deleteFarmer(id) {
         return;
     }
 
-    showToast(
-        "Farmer record deleted.",
-        "success"
-    );
-
     await loadAllData();
 
 }
 
 // ======================================================
-// DELETE HEALTH OBSERVATION
+// DELETE HEALTH
 // ======================================================
 
 async function deleteObservation(id) {
@@ -1783,7 +1725,10 @@ async function deleteObservation(id) {
         .from("crop_observations")
         .delete()
         .eq("id", id)
-        .eq("user_id", currentUser.id);
+        .eq(
+            "user_id",
+            currentUser.id
+        );
 
     if (error) {
 
@@ -1791,11 +1736,6 @@ async function deleteObservation(id) {
 
         return;
     }
-
-    showToast(
-        "Observation deleted.",
-        "success"
-    );
 
     await loadAllData();
 
@@ -1817,7 +1757,10 @@ async function deleteDiary(id) {
         .from("field_diary")
         .delete()
         .eq("id", id)
-        .eq("user_id", currentUser.id);
+        .eq(
+            "user_id",
+            currentUser.id
+        );
 
     if (error) {
 
@@ -1825,11 +1768,6 @@ async function deleteDiary(id) {
 
         return;
     }
-
-    showToast(
-        "Diary entry deleted.",
-        "success"
-    );
 
     await loadAllData();
 
@@ -1845,7 +1783,9 @@ async function deleteAllData() {
 
     const confirmed =
         confirm(
-            "WARNING!\n\nThis will permanently delete ALL your research data.\n\nContinue?"
+            "WARNING!\n\n" +
+            "This will permanently delete ALL your research data.\n\n" +
+            "Continue?"
         );
 
     if (!confirmed) return;
@@ -1867,9 +1807,24 @@ async function deleteAllData() {
         } = await supabaseClient
             .from(table)
             .delete()
-            .eq("user_id", currentUser.id);
+            .eq(
+                "user_id",
+                currentUser.id
+            );
 
         if (error) {
+
+            // Ignore table if it does not exist
+            if (
+                error.code === "42P01" ||
+                error.message
+                    ?.toLowerCase()
+                    .includes("does not exist")
+            ) {
+
+                continue;
+
+            }
 
             alert(
                 `Could not clear ${table}:\n${error.message}`
@@ -1882,9 +1837,8 @@ async function deleteAllData() {
 
     await loadAllData();
 
-    showToast(
-        "All research data has been deleted.",
-        "success"
+    alert(
+        "All research data has been deleted."
     );
 
 }
@@ -1934,8 +1888,7 @@ async function exportBackup() {
     const a =
         document.createElement("a");
 
-    a.href =
-        url;
+    a.href = url;
 
     a.download =
         `nayakhap-research-backup-${today()}.json`;
@@ -1947,11 +1900,6 @@ async function exportBackup() {
     a.remove();
 
     URL.revokeObjectURL(url);
-
-    showToast(
-        "☁️ Research backup downloaded.",
-        "success"
-    );
 
 }
 
@@ -1986,7 +1934,8 @@ async function restoreBackup(event) {
         }
 
         alert(
-            "Backup file read successfully.\n\nFor safety, restore is not automatic yet. Your current cloud data has NOT been changed."
+            "Backup file read successfully.\n\n" +
+            "Your cloud data has NOT been changed."
         );
 
     } catch (error) {
@@ -2010,9 +1959,11 @@ function openModal(id) {
     const modal =
         document.getElementById(id);
 
-    if (!modal) return;
+    if (modal) {
 
-    modal.classList.add("open");
+        modal.classList.add("open");
+
+    }
 
 }
 
@@ -2021,225 +1972,11 @@ function closeModal(id) {
     const modal =
         document.getElementById(id);
 
-    if (!modal) return;
+    if (modal) {
 
-    modal.classList.remove("open");
-
-}
-
-// ======================================================
-// DASHBOARD EFFECTS
-// ======================================================
-
-function setupDashboardEffects() {
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            if (event.key === "Escape") {
-
-                document
-                    .querySelectorAll(".modal.open")
-                    .forEach(modal => {
-
-                        modal.classList.remove("open");
-
-                    });
-
-            }
-
-        }
-    );
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            const modal =
-                event.target.closest(".modal");
-
-            if (
-                modal &&
-                event.target === modal
-            ) {
-
-                modal.classList.remove("open");
-
-            }
-
-        }
-    );
-
-}
-
-// ======================================================
-// GREETING
-// ======================================================
-
-function updateGreeting() {
-
-    const element =
-        document.getElementById("welcomeTitle");
-
-    if (!element) return;
-
-    const hour =
-        new Date().getHours();
-
-    let greeting =
-        "Welcome back";
-
-    if (hour < 12) {
-
-        greeting =
-            "Good morning";
-
-    } else if (hour < 17) {
-
-        greeting =
-            "Good afternoon";
-
-    } else {
-
-        greeting =
-            "Good evening";
+        modal.classList.remove("open");
 
     }
-
-    const email =
-        currentUser?.email || "";
-
-    const name =
-        email
-            .split("@")[0]
-            .replace(/[._-]/g, " ");
-
-    const displayName =
-        name
-            ? capitalizeWords(name)
-            : "Researcher";
-
-    element.textContent =
-        `${greeting}, ${displayName} 🌱`;
-
-}
-
-// ======================================================
-// CONNECTION STATUS
-// ======================================================
-
-function updateConnectionStatus() {
-
-    const status =
-        document.querySelector(".status");
-
-    if (!status) return;
-
-    status.innerHTML = `
-        <span class="status-dot"></span>
-        Cloud Synced
-    `;
-
-}
-
-// ======================================================
-// TOAST NOTIFICATION
-// ======================================================
-
-function showToast(
-    message,
-    type = "success"
-) {
-
-    let container =
-        document.getElementById(
-            "toastContainer"
-        );
-
-    if (!container) {
-
-        container =
-            document.createElement("div");
-
-        container.id =
-            "toastContainer";
-
-        container.style.position =
-            "fixed";
-
-        container.style.right =
-            "22px";
-
-        container.style.bottom =
-            "22px";
-
-        container.style.zIndex =
-            "9999";
-
-        container.style.display =
-            "flex";
-
-        container.style.flexDirection =
-            "column";
-
-        container.style.gap =
-            "10px";
-
-        document.body.appendChild(
-            container
-        );
-
-    }
-
-    const toast =
-        document.createElement("div");
-
-    toast.textContent =
-        message;
-
-    toast.style.padding =
-        "13px 18px";
-
-    toast.style.borderRadius =
-        "12px";
-
-    toast.style.background =
-        type === "error"
-            ? "#c0392b"
-            : "#185b31";
-
-    toast.style.color =
-        "white";
-
-    toast.style.fontSize =
-        "13px";
-
-    toast.style.fontWeight =
-        "600";
-
-    toast.style.boxShadow =
-        "0 12px 30px rgba(0,0,0,.18)";
-
-    toast.style.animation =
-        "toastIn .35s ease";
-
-    container.appendChild(
-        toast
-    );
-
-    setTimeout(() => {
-
-        toast.style.animation =
-            "toastOut .3s ease";
-
-        setTimeout(() => {
-
-            toast.remove();
-
-        }, 300);
-
-    }, 2600);
 
 }
 
@@ -2273,18 +2010,6 @@ function parseNumber(value) {
     return Number.isFinite(number)
         ? number
         : null;
-
-}
-
-function formatNumber(value) {
-
-    return Number(value || 0)
-        .toLocaleString(
-            "en-IN",
-            {
-                maximumFractionDigits: 2
-            }
-        );
 
 }
 
@@ -2381,20 +2106,6 @@ function escapeHtml(value) {
 
 }
 
-function capitalizeWords(value) {
-
-    return value
-        .split(" ")
-        .filter(Boolean)
-        .map(
-            word =>
-                word.charAt(0).toUpperCase() +
-                word.slice(1)
-        )
-        .join(" ");
-
-}
-
 // ======================================================
 // AUTH UI HELPERS
 // ======================================================
@@ -2410,16 +2121,14 @@ function setAuthLoading(loading) {
 
     if (loading) {
 
-        button.disabled =
-            true;
+        button.disabled = true;
 
         button.textContent =
             "Please wait...";
 
     } else {
 
-        button.disabled =
-            false;
+        button.disabled = false;
 
         const signup =
             document
@@ -2476,414 +2185,34 @@ function clearAuthMessage() {
 }
 
 // ======================================================
-// EXTRA DASHBOARD ANIMATION CSS
+// GLOBAL FUNCTIONS
+// Required for HTML onclick=""
+//
 // ======================================================
 
-(function injectDashboardStyles() {
+window.openModal =
+    openModal;
 
-    if (
-        document.getElementById(
-            "dashboardAnimationStyles"
-        )
-    ) return;
+window.closeModal =
+    closeModal;
 
-    const style =
-        document.createElement("style");
+window.deleteField =
+    deleteField;
 
-    style.id =
-        "dashboardAnimationStyles";
+window.deleteFarmer =
+    deleteFarmer;
 
-    style.textContent = `
+window.deleteObservation =
+    deleteObservation;
 
-        .page-enter {
-            animation:
-                dashboardPageIn
-                .4s
-                ease
-                both;
-        }
+window.deleteDiary =
+    deleteDiary;
 
-        @keyframes dashboardPageIn {
+window.deleteAllData =
+    deleteAllData;
 
-            from {
-                opacity: 0;
-                transform:
-                    translateY(10px);
-            }
+window.exportBackup =
+    exportBackup;
 
-            to {
-                opacity: 1;
-                transform:
-                    translateY(0);
-            }
-
-        }
-
-        .table-row-animated {
-            animation:
-                rowIn
-                .35s
-                ease
-                both;
-        }
-
-        @keyframes rowIn {
-
-            from {
-                opacity: 0;
-                transform:
-                    translateX(-8px);
-            }
-
-            to {
-                opacity: 1;
-                transform:
-                    translateX(0);
-            }
-
-        }
-
-        .animated-card {
-            animation:
-                cardIn
-                .45s
-                ease
-                both;
-        }
-
-        @keyframes cardIn {
-
-            from {
-                opacity: 0;
-                transform:
-                    translateY(12px)
-                    scale(.98);
-            }
-
-            to {
-                opacity: 1;
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-
-        }
-
-        .crop-stat {
-            margin-bottom: 14px;
-            animation:
-                cropIn
-                .45s
-                ease
-                both;
-        }
-
-        .crop-stat-top {
-            display:
-                flex;
-            justify-content:
-                space-between;
-            align-items:
-                center;
-            gap:
-                10px;
-            font-size:
-                13px;
-            margin-bottom:
-                7px;
-        }
-
-        .crop-stat-top small {
-            color:
-                var(--muted);
-            font-weight:
-                400;
-        }
-
-        .crop-progress {
-            width:
-                100%;
-            height:
-                7px;
-            background:
-                var(--green-light);
-            border-radius:
-                20px;
-            overflow:
-                hidden;
-        }
-
-        .crop-progress-fill {
-            height:
-                100%;
-            background:
-                linear-gradient(
-                    90deg,
-                    #185b31,
-                    #45b96c
-                );
-            border-radius:
-                20px;
-            animation:
-                progressGrow
-                1s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                );
-        }
-
-        @keyframes progressGrow {
-
-            from {
-                width: 0 !important;
-            }
-
-        }
-
-        @keyframes cropIn {
-
-            from {
-                opacity: 0;
-                transform:
-                    translateX(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform:
-                    translateX(0);
-            }
-
-        }
-
-        .activity-item {
-            display:
-                flex;
-            gap:
-                12px;
-            align-items:
-                center;
-            padding:
-                12px 0;
-            border-bottom:
-                1px solid var(--border);
-            animation:
-                activityIn
-                .4s
-                ease
-                both;
-        }
-
-        .activity-icon {
-            width:
-                38px;
-            height:
-                38px;
-            min-width:
-                38px;
-            border-radius:
-                11px;
-            background:
-                var(--green-light);
-            display:
-                flex;
-            align-items:
-                center;
-            justify-content:
-                center;
-            font-size:
-                18px;
-        }
-
-        .activity-content {
-            display:
-                flex;
-            flex-direction:
-                column;
-            gap:
-                3px;
-            min-width:
-                0;
-        }
-
-        .activity-content strong {
-            font-size:
-                13px;
-            font-weight:
-                600;
-        }
-
-        .activity-content span {
-            color:
-                var(--muted);
-            font-size:
-                11px;
-        }
-
-        .insight-item {
-            display:
-                flex;
-            justify-content:
-                space-between;
-            align-items:
-                center;
-            padding:
-                13px 0;
-            border-bottom:
-                1px solid var(--border);
-            gap:
-                15px;
-        }
-
-        .insight-item span {
-            color:
-                var(--muted);
-            font-size:
-                13px;
-        }
-
-        .insight-item strong {
-            font-size:
-                14px;
-        }
-
-        #fieldCount,
-        #farmerCount,
-        #healthCount,
-        #diaryCount {
-            transition:
-                transform
-                .2s
-                ease;
-        }
-
-        .stat-card:hover {
-            transform:
-                translateY(-4px);
-            box-shadow:
-                0 12px 30px
-                rgba(
-                    24,
-                    91,
-                    49,
-                    .08
-                );
-        }
-
-        .stat-card {
-            transition:
-                transform
-                .25s
-                ease,
-                box-shadow
-                .25s
-                ease;
-        }
-
-        .card,
-        .backup-card,
-        .diary-card {
-            transition:
-                transform
-                .25s
-                ease,
-                box-shadow
-                .25s
-                ease;
-        }
-
-        .card:hover,
-        .backup-card:hover,
-        .diary-card:hover {
-            transform:
-                translateY(-3px);
-            box-shadow:
-                0 12px 28px
-                rgba(
-                    23,
-                    35,
-                    26,
-                    .07
-                );
-        }
-
-        @keyframes activityIn {
-
-            from {
-                opacity: 0;
-                transform:
-                    translateY(8px);
-            }
-
-            to {
-                opacity: 1;
-                transform:
-                    translateY(0);
-            }
-
-        }
-
-        @keyframes toastIn {
-
-            from {
-                opacity: 0;
-                transform:
-                    translateY(15px)
-                    scale(.95);
-            }
-
-            to {
-                opacity: 1;
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-
-        }
-
-        @keyframes toastOut {
-
-            from {
-                opacity: 1;
-                transform:
-                    translateY(0)
-                    scale(1);
-            }
-
-            to {
-                opacity: 0;
-                transform:
-                    translateY(10px)
-                    scale(.96);
-            }
-
-        }
-
-        @media (
-            prefers-reduced-motion:
-            reduce
-        ) {
-
-            *,
-            *::before,
-            *::after {
-                animation-duration:
-                    .01ms !important;
-                animation-iteration-count:
-                    1 !important;
-                transition-duration:
-                    .01ms !important;
-            }
-
-        }
-
-    `;
-
-    document.head.appendChild(
-        style
-    );
-
-})();
+window.restoreBackup =
+    restoreBackup;
