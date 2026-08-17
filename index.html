@@ -2,51 +2,258 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>NayaKhap Agro Research</title>
+    <title>NayaKhap Agro Research | Agricultural Field Research</title>
 
-    <!-- Google Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta
+        name="description"
+        content="NayaKhap Agro Research is a digital agricultural research platform for recording fields, farmers, crop health observations and field diary data from NayaKhap, Gidhaur, Chatra, Jharkhand."
+    >
 
-    <!-- Main CSS -->
+    <meta
+        name="keywords"
+        content="NayaKhap Agro Research, agricultural research, agriculture Jharkhand, farmer research, crop health, field research, Gidhaur, Chatra, Jharkhand"
+    >
+
+    <meta name="author" content="Sumit Kumar Yadav">
+    <meta name="creator" content="Sumit Kumar Yadav">
+    <meta name="publisher" content="NayaKhap Agro Research">
+
+    <meta name="robots" content="index, follow">
+
+    <link
+        rel="canonical"
+        href="https://sumit2728.github.io/nayakhap-agro-research/"
+    >
+
+    <!-- Open Graph -->
+    <meta
+        property="og:title"
+        content="NayaKhap Agro Research"
+    >
+
+    <meta
+        property="og:description"
+        content="Digital agricultural research platform for field records, farmer records, crop health and field observations."
+    >
+
+    <meta
+        property="og:type"
+        content="website"
+    >
+
+    <meta
+        property="og:url"
+        content="https://sumit2728.github.io/nayakhap-agro-research/"
+    >
+
+    <meta
+        property="og:site_name"
+        content="NayaKhap Agro Research"
+    >
+
+    <!-- Twitter / X -->
+    <meta
+        name="twitter:card"
+        content="summary"
+    >
+
+    <meta
+        name="twitter:title"
+        content="NayaKhap Agro Research"
+    >
+
+    <meta
+        name="twitter:description"
+        content="Digital agricultural research platform for field and crop observations."
+    >
+
+    <!-- Google / Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "NayaKhap Agro Research",
+        "alternateName": "NayaKhap Agricultural Research",
+        "url": "https://sumit2728.github.io/nayakhap-agro-research/",
+        "description": "Digital agricultural research platform for recording fields, farmers, crop health observations and field diary data.",
+        "author": {
+            "@type": "Person",
+            "name": "Sumit Kumar Yadav"
+        },
+        "creator": {
+            "@type": "Person",
+            "name": "Sumit Kumar Yadav"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "NayaKhap Agro Research"
+        },
+        "areaServed": {
+            "@type": "Place",
+            "name": "NayaKhap, Gidhaur, Chatra, Jharkhand, India"
+        }
+    }
+    </script>
+
     <link rel="stylesheet" href="./style.css">
 
-    <!-- Supabase -->
+    <style>
+        #authScreen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #e9f6ed, #f5f7f5);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 430px;
+            background: #fff;
+            border: 1px solid #e3e9e4;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 18px 50px rgba(24,91,49,.10);
+        }
+
+        .auth-brand {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-brand .brand-icon {
+            margin: 0 auto 12px;
+        }
+
+        .auth-brand h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .auth-brand p {
+            color: #708074;
+            font-size: 13px;
+        }
+
+        .auth-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .auth-tab {
+            border: 1px solid #d9e1db;
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #536057;
+        }
+
+        .auth-tab.active {
+            background: #247a43;
+            color: #fff;
+            border-color: #247a43;
+        }
+
+        .auth-message {
+            min-height: 20px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #536057;
+        }
+
+        .auth-message.error {
+            color: #c0392b;
+        }
+
+        .auth-message.success {
+            color: #247a43;
+        }
+
+        .auth-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .auth-user small {
+            display: block;
+            color: #708074;
+        }
+
+        .logout-btn {
+            border: 1px solid #f3cbc7;
+            background: #fff0ef;
+            color: #c0392b;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .cloud-status {
+            background: white;
+            border: 1px solid #e3e9e4;
+            padding: 9px 13px;
+            border-radius: 30px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .cloud-dot {
+            width: 8px;
+            height: 8px;
+            background: #35a85b;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        @media (max-width: 500px) {
+            .auth-card {
+                padding: 22px;
+            }
+
+            .auth-user small {
+                max-width: 140px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+    </style>
+
+    <!-- SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
 
-<!-- =====================================================
-     AUTH SCREEN
-===================================================== -->
+<!-- ============================= -->
+<!-- LOGIN / SIGNUP SCREEN -->
+<!-- ============================= -->
 
 <div id="authScreen">
-
-    <div class="auth-background-circle circle-one"></div>
-    <div class="auth-background-circle circle-two"></div>
 
     <div class="auth-card">
 
         <div class="auth-brand">
 
-            <div class="auth-logo">
-                🌱
-            </div>
+            <div class="brand-icon">🌱</div>
 
-            <div class="brand-title">
-                NayaKhap
-            </div>
-
-            <div class="brand-subtitle">
-                Agro Research
-            </div>
+            <h1>NayaKhap Agro Research</h1>
 
             <p>
-                Secure agricultural research database
+                Secure cloud research database
+            </p>
+
+            <p style="margin-top:8px;">
+                Research by <strong>Sumit Kumar Yadav</strong>
             </p>
 
         </div>
@@ -100,7 +307,7 @@
 
             <label
                 id="confirmPasswordWrap"
-                class="hidden"
+                style="display:none"
             >
                 Confirm Password
 
@@ -128,18 +335,14 @@
 
         </form>
 
-        <div class="auth-security">
-            🔐 Your research data is stored securely in the cloud.
-        </div>
-
     </div>
 
 </div>
 
 
-<!-- =====================================================
-     APPLICATION
-===================================================== -->
+<!-- ============================= -->
+<!-- MAIN APPLICATION -->
+<!-- ============================= -->
 
 <div
     class="app"
@@ -158,11 +361,17 @@
             </div>
 
             <div>
+
                 <h2>NayaKhap</h2>
-                <span>Agro Research</span>
+
+                <span>
+                    Agro Research
+                </span>
+
             </div>
 
         </div>
+
 
         <nav>
 
@@ -170,51 +379,46 @@
                 class="nav-btn active"
                 data-page="dashboard"
             >
-                <span>📊</span>
-                Dashboard
+                📊 Dashboard
             </button>
 
             <button
                 class="nav-btn"
                 data-page="fields"
             >
-                <span>🌾</span>
-                Field Records
+                🌾 Field Records
             </button>
 
             <button
                 class="nav-btn"
                 data-page="farmers"
             >
-                <span>👨‍🌾</span>
-                Farmers
+                👨‍🌾 Farmers
             </button>
 
             <button
                 class="nav-btn"
                 data-page="health"
             >
-                <span>🦠</span>
-                Crop Health
+                🦠 Crop Health
             </button>
 
             <button
                 class="nav-btn"
                 data-page="diary"
             >
-                <span>📓</span>
-                Field Diary
+                📓 Field Diary
             </button>
 
             <button
                 class="nav-btn"
                 data-page="backup"
             >
-                <span>💾</span>
-                Backup & Data
+                💾 Backup & Data
             </button>
 
         </nav>
+
 
         <div class="sidebar-footer">
 
@@ -239,11 +443,11 @@
 
     <main class="main">
 
-        <!-- TOPBAR -->
+        <!-- TOP BAR -->
 
         <header class="topbar">
 
-            <div class="topbar-left">
+            <div>
 
                 <button
                     id="mobileMenu"
@@ -252,45 +456,39 @@
                     ☰
                 </button>
 
-                <div>
-                    <h1 id="pageTitle">
-                        Research Dashboard
-                    </h1>
+                <h1 id="pageTitle">
+                    Research Dashboard
+                </h1>
 
-                    <p>
-                        Local agricultural research data management
-                    </p>
-                </div>
+                <p>
+                    Local agricultural research data management
+                </p>
 
             </div>
 
-            <div class="topbar-right">
+
+            <div class="auth-user">
 
                 <div class="cloud-status">
+
                     <span class="cloud-dot"></span>
+
                     Cloud Synced
+
                 </div>
 
-                <div class="user-box">
 
-                    <div class="user-avatar">
-                        👤
-                    </div>
+                <div>
 
-                    <div class="user-details">
+                    <small id="userEmail"></small>
 
-                        <small id="userEmail">
-                        </small>
-
-                        <button
-                            id="logoutBtn"
-                            class="logout-btn"
-                            type="button"
-                        >
-                            Logout
-                        </button>
-
-                    </div>
+                    <button
+                        id="logoutBtn"
+                        class="logout-btn"
+                        type="button"
+                    >
+                        Logout
+                    </button>
 
                 </div>
 
@@ -299,9 +497,9 @@
         </header>
 
 
-        <!-- =================================================
-             DASHBOARD
-        ================================================== -->
+        <!-- ============================= -->
+        <!-- DASHBOARD -->
+        <!-- ============================= -->
 
         <section
             id="dashboard"
@@ -310,7 +508,7 @@
 
             <div class="welcome">
 
-                <div class="welcome-content">
+                <div>
 
                     <span class="eyebrow">
                         FIELD RESEARCH 2026
@@ -321,33 +519,24 @@
                     </h2>
 
                     <p>
-                        Record, organize and analyze agricultural
-                        observations from your village.
+                        Record, organize and analyze
+                        agricultural observations
+                        from your village.
                     </p>
 
-                    <div class="welcome-actions">
-
-                        <button
-                            class="primary-btn welcome-btn"
-                            onclick="openModal('fieldModal')"
-                        >
-                            + Add Field
-                        </button>
-
-                        <button
-                            class="outline-light-btn"
-                            onclick="showPage('farmers')"
-                        >
-                            View Farmers →
-                        </button>
-
-                    </div>
+                    <small style="display:block;margin-top:8px;color:#708074;">
+                        Researcher: <strong>Sumit Kumar Yadav</strong>
+                    </small>
 
                 </div>
 
-                <div class="welcome-illustration">
-                    🌾
-                </div>
+
+                <button
+                    class="primary-btn"
+                    onclick="openModal('fieldModal')"
+                >
+                    + Add Field
+                </button>
 
             </div>
 
@@ -363,9 +552,15 @@
                     </div>
 
                     <div>
-                        <span>Fields</span>
-                        <strong id="fieldCount">0</strong>
-                        <small>Registered fields</small>
+
+                        <span>
+                            Fields
+                        </span>
+
+                        <strong id="fieldCount">
+                            0
+                        </strong>
+
                     </div>
 
                 </div>
@@ -378,9 +573,15 @@
                     </div>
 
                     <div>
-                        <span>Farmers</span>
-                        <strong id="farmerCount">0</strong>
-                        <small>Research participants</small>
+
+                        <span>
+                            Farmers
+                        </span>
+
+                        <strong id="farmerCount">
+                            0
+                        </strong>
+
                     </div>
 
                 </div>
@@ -393,9 +594,15 @@
                     </div>
 
                     <div>
-                        <span>Health Records</span>
-                        <strong id="healthCount">0</strong>
-                        <small>Crop observations</small>
+
+                        <span>
+                            Health Records
+                        </span>
+
+                        <strong id="healthCount">
+                            0
+                        </strong>
+
                     </div>
 
                 </div>
@@ -408,9 +615,15 @@
                     </div>
 
                     <div>
-                        <span>Diary Entries</span>
-                        <strong id="diaryCount">0</strong>
-                        <small>Field observations</small>
+
+                        <span>
+                            Diary Entries
+                        </span>
+
+                        <strong id="diaryCount">
+                            0
+                        </strong>
+
                     </div>
 
                 </div>
@@ -418,31 +631,32 @@
             </div>
 
 
-            <!-- DASHBOARD GRID -->
+            <!-- DASHBOARD CARDS -->
 
-            <div class="dashboard-grid">
+            <div class="grid-two">
 
-                <!-- CROP DISTRIBUTION -->
-
-                <div class="card large-card">
+                <div class="card">
 
                     <div class="card-header">
 
                         <div>
-                            <h3>Crop Distribution</h3>
+
+                            <h3>
+                                Crop Distribution
+                            </h3>
 
                             <p>
-                                Crops recorded across your research fields
+                                Crops recorded in your fields
                             </p>
-                        </div>
 
-                        <div class="card-icon">
-                            🌱
                         </div>
 
                     </div>
 
-                    <div id="cropDistribution">
+                    <div
+                        id="cropDistribution"
+                        class="crop-list"
+                    >
 
                         <div class="empty">
                             No field data yet.
@@ -453,22 +667,20 @@
                 </div>
 
 
-                <!-- RECENT ACTIVITY -->
-
-                <div class="card large-card">
+                <div class="card">
 
                     <div class="card-header">
 
                         <div>
-                            <h3>Recent Activity</h3>
+
+                            <h3>
+                                Recent Activity
+                            </h3>
 
                             <p>
                                 Latest research observations
                             </p>
-                        </div>
 
-                        <div class="card-icon">
-                            ⚡
                         </div>
 
                     </div>
@@ -485,79 +697,12 @@
 
             </div>
 
-
-            <!-- QUICK ACTIONS -->
-
-            <div class="card quick-card">
-
-                <div class="card-header">
-
-                    <div>
-                        <h3>Quick Research Actions</h3>
-
-                        <p>
-                            Start recording your field research
-                        </p>
-                    </div>
-
-                </div>
-
-                <div class="quick-actions">
-
-                    <button
-                        onclick="openModal('fieldModal')"
-                        class="quick-action"
-                    >
-                        <span>🌾</span>
-                        <div>
-                            <strong>Add Field</strong>
-                            <small>Record a new field</small>
-                        </div>
-                    </button>
-
-                    <button
-                        onclick="openModal('farmerModal')"
-                        class="quick-action"
-                    >
-                        <span>👨‍🌾</span>
-                        <div>
-                            <strong>Add Farmer</strong>
-                            <small>Create farmer record</small>
-                        </div>
-                    </button>
-
-                    <button
-                        onclick="openModal('healthModal')"
-                        class="quick-action"
-                    >
-                        <span>🦠</span>
-                        <div>
-                            <strong>Crop Health</strong>
-                            <small>Record symptoms</small>
-                        </div>
-                    </button>
-
-                    <button
-                        onclick="openModal('diaryModal')"
-                        class="quick-action"
-                    >
-                        <span>📓</span>
-                        <div>
-                            <strong>Field Diary</strong>
-                            <small>Add observation</small>
-                        </div>
-                    </button>
-
-                </div>
-
-            </div>
-
         </section>
 
 
-        <!-- =================================================
-             FIELDS
-        ================================================== -->
+        <!-- ============================= -->
+        <!-- FIELD RECORDS -->
+        <!-- ============================= -->
 
         <section
             id="fields"
@@ -567,11 +712,15 @@
             <div class="section-header">
 
                 <div>
-                    <h2>Field Records</h2>
+
+                    <h2>
+                        Field Records
+                    </h2>
 
                     <p>
-                        Maintain detailed records of agricultural fields.
+                        Maintain records of agricultural fields.
                     </p>
+
                 </div>
 
                 <button
@@ -583,15 +732,17 @@
 
             </div>
 
+
             <div class="toolbar">
 
                 <input
                     type="search"
                     id="fieldSearch"
-                    placeholder="🔎 Search field, crop or variety..."
+                    placeholder="Search field, crop or variety..."
                 >
 
             </div>
+
 
             <div class="table-card">
 
@@ -600,12 +751,14 @@
                     <thead>
 
                         <tr>
+
                             <th>Field ID</th>
                             <th>Crop</th>
                             <th>Variety</th>
                             <th>Water</th>
                             <th>Sowing Date</th>
                             <th>Actions</th>
+
                         </tr>
 
                     </thead>
@@ -619,9 +772,9 @@
         </section>
 
 
-        <!-- =================================================
-             FARMERS
-        ================================================== -->
+        <!-- ============================= -->
+        <!-- FARMERS -->
+        <!-- ============================= -->
 
         <section
             id="farmers"
@@ -631,11 +784,15 @@
             <div class="section-header">
 
                 <div>
-                    <h2>Farmer Records</h2>
+
+                    <h2>
+                        Farmer Records
+                    </h2>
 
                     <p>
-                        Use a unique Farmer Code to connect research records.
+                        Use farmer codes instead of unnecessary personal information.
                     </p>
+
                 </div>
 
                 <button
@@ -647,11 +804,6 @@
 
             </div>
 
-            <div class="info-banner">
-                💡 <strong>Tip:</strong>
-                Keep the same Farmer Code when recording research
-                related to the same farmer.
-            </div>
 
             <div class="table-card">
 
@@ -660,11 +812,13 @@
                     <thead>
 
                         <tr>
+
                             <th>Farmer Code</th>
                             <th>Main Crop</th>
                             <th>Seed Source</th>
                             <th>Irrigation</th>
                             <th>Actions</th>
+
                         </tr>
 
                     </thead>
@@ -678,9 +832,9 @@
         </section>
 
 
-        <!-- =================================================
-             HEALTH
-        ================================================== -->
+        <!-- ============================= -->
+        <!-- CROP HEALTH -->
+        <!-- ============================= -->
 
         <section
             id="health"
@@ -690,11 +844,15 @@
             <div class="section-header">
 
                 <div>
-                    <h2>Crop Health</h2>
+
+                    <h2>
+                        Crop Health
+                    </h2>
 
                     <p>
                         Document symptoms, pests and crop-health observations.
                     </p>
+
                 </div>
 
                 <button
@@ -706,6 +864,7 @@
 
             </div>
 
+
             <div class="table-card">
 
                 <table>
@@ -713,6 +872,7 @@
                     <thead>
 
                         <tr>
+
                             <th>Date</th>
                             <th>Field</th>
                             <th>Crop</th>
@@ -720,6 +880,7 @@
                             <th>Severity</th>
                             <th>Identification</th>
                             <th>Actions</th>
+
                         </tr>
 
                     </thead>
@@ -733,9 +894,9 @@
         </section>
 
 
-        <!-- =================================================
-             DIARY
-        ================================================== -->
+        <!-- ============================= -->
+        <!-- FIELD DIARY -->
+        <!-- ============================= -->
 
         <section
             id="diary"
@@ -745,11 +906,15 @@
             <div class="section-header">
 
                 <div>
-                    <h2>Field Diary</h2>
+
+                    <h2>
+                        Field Diary
+                    </h2>
 
                     <p>
                         Record observations during field visits.
                     </p>
+
                 </div>
 
                 <button
@@ -761,6 +926,7 @@
 
             </div>
 
+
             <div
                 id="diaryList"
                 class="diary-grid"
@@ -769,9 +935,9 @@
         </section>
 
 
-        <!-- =================================================
-             BACKUP
-        ================================================== -->
+        <!-- ============================= -->
+        <!-- BACKUP -->
+        <!-- ============================= -->
 
         <section
             id="backup"
@@ -781,14 +947,19 @@
             <div class="section-header">
 
                 <div>
-                    <h2>Backup & Data</h2>
+
+                    <h2>
+                        Backup & Data
+                    </h2>
 
                     <p>
-                        Protect and manage your research data.
+                        Protect your research data.
                     </p>
+
                 </div>
 
             </div>
+
 
             <div class="backup-grid">
 
@@ -798,11 +969,12 @@
                         ⬇️
                     </div>
 
-                    <h3>Export Backup</h3>
+                    <h3>
+                        Export Backup
+                    </h3>
 
                     <p>
-                        Download your complete research data
-                        as a JSON file.
+                        Download your cloud research data as a JSON file.
                     </p>
 
                     <button
@@ -821,10 +993,12 @@
                         ⬆️
                     </div>
 
-                    <h3>Restore Backup</h3>
+                    <h3>
+                        Restore Backup
+                    </h3>
 
                     <p>
-                        Select a compatible JSON backup file.
+                        Restore a compatible research backup into your cloud database.
                     </p>
 
                     <input
@@ -837,17 +1011,18 @@
                 </div>
 
 
-                <div class="backup-card danger-card">
+                <div class="backup-card danger">
 
                     <div class="big-icon">
                         ⚠️
                     </div>
 
-                    <h3>Delete All Data</h3>
+                    <h3>
+                        Delete All Data
+                    </h3>
 
                     <p>
-                        Permanently delete all research data
-                        from your account.
+                        Permanently delete all research data from your cloud account.
                     </p>
 
                     <button
@@ -861,16 +1036,16 @@
 
             </div>
 
+
             <div class="security-note">
 
                 <strong>
-                    🔐 Data Security
+                    🔐 Important
                 </strong>
 
                 <p>
-                    Your records are separated by your Supabase
-                    account. Regularly export a backup and keep
-                    a copy on another device.
+                    Your research records are stored in your Supabase cloud database.
+                    Use Export Backup regularly and keep a copy on another device or drive.
                 </p>
 
             </div>
@@ -882,9 +1057,9 @@
 </div>
 
 
-<!-- =====================================================
-     FIELD MODAL
-===================================================== -->
+<!-- ============================= -->
+<!-- FIELD MODAL -->
+<!-- ============================= -->
 
 <div
     class="modal"
@@ -895,13 +1070,9 @@
 
         <div class="modal-header">
 
-            <div>
-                <span class="modal-eyebrow">
-                    RESEARCH RECORD
-                </span>
-
-                <h2>Add Field Record</h2>
-            </div>
+            <h2>
+                Add Field Record
+            </h2>
 
             <button
                 type="button"
@@ -912,13 +1083,13 @@
 
         </div>
 
+
         <form id="fieldForm">
 
             <div class="form-grid">
 
                 <label>
                     Field ID *
-
                     <input
                         id="fieldId"
                         required
@@ -926,9 +1097,9 @@
                     >
                 </label>
 
+
                 <label>
                     Crop *
-
                     <input
                         id="fieldCrop"
                         required
@@ -936,85 +1107,74 @@
                     >
                 </label>
 
+
                 <label>
                     Variety
-
                     <input
                         id="fieldVariety"
                         placeholder="Variety name"
                     >
                 </label>
 
+
                 <label>
                     Sowing / Transplanting Date
-
                     <input
                         type="date"
                         id="fieldDate"
                     >
                 </label>
 
+
                 <label>
                     Irrigation
-
                     <select id="fieldWater">
-
                         <option>Rain-fed</option>
                         <option>Irrigated</option>
                         <option>Partially irrigated</option>
-
                     </select>
-
                 </label>
+
 
                 <label>
                     Field Size
-
                     <input
                         id="fieldSize"
-                        type="number"
-                        step="0.01"
                         placeholder="Approx. acres"
                     >
                 </label>
 
+
                 <label>
                     Fertilizer / Manure
-
                     <input
                         id="fieldFertilizer"
-                        placeholder="Urea, FYM, NPK..."
                     >
                 </label>
 
+
                 <label>
                     Expected / Actual Yield
-
                     <input
                         id="fieldYield"
-                        type="number"
-                        step="0.01"
                         placeholder="kg/acre"
                     >
                 </label>
 
             </div>
 
+
             <label>
                 Notes
-
-                <textarea
-                    id="fieldNotes"
-                    placeholder="Additional field observations..."
-                ></textarea>
-
+                <textarea id="fieldNotes"></textarea>
             </label>
+
 
             <button
                 class="primary-btn full"
                 type="submit"
             >
-                Save Field Record
+                Save Field
             </button>
 
         </form>
@@ -1024,9 +1184,9 @@
 </div>
 
 
-<!-- =====================================================
-     FARMER MODAL
-===================================================== -->
+<!-- ============================= -->
+<!-- FARMER MODAL -->
+<!-- ============================= -->
 
 <div
     class="modal"
@@ -1037,13 +1197,9 @@
 
         <div class="modal-header">
 
-            <div>
-                <span class="modal-eyebrow">
-                    FARMER DATABASE
-                </span>
-
-                <h2>Add Farmer Record</h2>
-            </div>
+            <h2>
+                Add Farmer Record
+            </h2>
 
             <button
                 type="button"
@@ -1054,13 +1210,13 @@
 
         </div>
 
+
         <form id="farmerForm">
 
             <div class="form-grid">
 
                 <label>
                     Farmer Code *
-
                     <input
                         id="farmerCode"
                         required
@@ -1068,56 +1224,46 @@
                     >
                 </label>
 
+
                 <label>
                     Main Crop
-
                     <input
                         id="farmerCrop"
-                        placeholder="Rice"
                     >
                 </label>
+
 
                 <label>
                     Seed Source
-
                     <input
                         id="seedSource"
-                        placeholder="Local / Market / Govt."
                     >
                 </label>
 
+
                 <label>
                     Irrigation
-
                     <select id="farmerWater">
-
                         <option>Rain-fed</option>
                         <option>Irrigated</option>
                         <option>Partially irrigated</option>
-
                     </select>
-
                 </label>
 
             </div>
 
+
             <label>
                 Major Farming Problem
-
-                <textarea
-                    id="farmerProblem"
-                    placeholder="Main problem reported by farmer..."
-                ></textarea>
+                <textarea id="farmerProblem"></textarea>
             </label>
+
 
             <label>
                 Farmer's Observation
-
-                <textarea
-                    id="farmerObservation"
-                    placeholder="Farmer's own observation..."
-                ></textarea>
+                <textarea id="farmerObservation"></textarea>
             </label>
+
 
             <button
                 class="primary-btn full"
@@ -1133,48 +1279,9 @@
 </div>
 
 
-<!-- =====================================================
-     FARMER PROFILE MODAL
-===================================================== -->
-
-<div
-    class="modal"
-    id="farmerProfileModal"
->
-
-    <div class="modal-box profile-modal">
-
-        <div class="modal-header">
-
-            <div>
-                <span class="modal-eyebrow">
-                    RESEARCH PROFILE
-                </span>
-
-                <h2 id="profileTitle">
-                    Farmer Profile
-                </h2>
-            </div>
-
-            <button
-                type="button"
-                onclick="closeModal('farmerProfileModal')"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <div id="farmerProfileContent"></div>
-
-    </div>
-
-</div>
-
-
-<!-- =====================================================
-     HEALTH MODAL
-===================================================== -->
+<!-- ============================= -->
+<!-- HEALTH MODAL -->
+<!-- ============================= -->
 
 <div
     class="modal"
@@ -1185,13 +1292,9 @@
 
         <div class="modal-header">
 
-            <div>
-                <span class="modal-eyebrow">
-                    CROP MONITORING
-                </span>
-
-                <h2>Crop Health Observation</h2>
-            </div>
+            <h2>
+                Crop Health Observation
+            </h2>
 
             <button
                 type="button"
@@ -1202,13 +1305,13 @@
 
         </div>
 
+
         <form id="healthForm">
 
             <div class="form-grid">
 
                 <label>
                     Date *
-
                     <input
                         type="date"
                         id="healthDate"
@@ -1216,43 +1319,39 @@
                     >
                 </label>
 
+
                 <label>
                     Field ID
-
                     <input
                         id="healthField"
                         placeholder="NK-GID-001"
                     >
                 </label>
 
+
                 <label>
                     Crop
-
                     <input
                         id="healthCrop"
-                        placeholder="Rice"
                     >
                 </label>
 
+
                 <label>
                     Severity
-
                     <select id="healthSeverity">
-
                         <option>Low</option>
                         <option>Moderate</option>
                         <option>High</option>
                         <option>Severe</option>
-
                     </select>
-
                 </label>
 
             </div>
 
+
             <label>
                 Symptoms *
-
                 <textarea
                     id="healthSymptoms"
                     required
@@ -1260,23 +1359,21 @@
                 ></textarea>
             </label>
 
+
             <label>
                 Initial Identification
-
                 <input
                     id="healthIdentification"
                     placeholder="Leave blank if uncertain"
                 >
             </label>
 
+
             <label>
                 Management / Treatment Observed
-
-                <textarea
-                    id="healthTreatment"
-                    placeholder="Treatment or management observed..."
-                ></textarea>
+                <textarea id="healthTreatment"></textarea>
             </label>
+
 
             <button
                 class="primary-btn full"
@@ -1292,9 +1389,9 @@
 </div>
 
 
-<!-- =====================================================
-     DIARY MODAL
-===================================================== -->
+<!-- ============================= -->
+<!-- DIARY MODAL -->
+<!-- ============================= -->
 
 <div
     class="modal"
@@ -1305,13 +1402,9 @@
 
         <div class="modal-header">
 
-            <div>
-                <span class="modal-eyebrow">
-                    FIELD VISIT
-                </span>
-
-                <h2>Field Diary Entry</h2>
-            </div>
+            <h2>
+                Field Diary Entry
+            </h2>
 
             <button
                 type="button"
@@ -1322,11 +1415,11 @@
 
         </div>
 
+
         <form id="diaryForm">
 
             <label>
                 Date *
-
                 <input
                     type="date"
                     id="diaryDate"
@@ -1334,18 +1427,18 @@
                 >
             </label>
 
+
             <label>
                 Field ID
-
                 <input
                     id="diaryField"
                     placeholder="NK-GID-001"
                 >
             </label>
 
+
             <label>
                 Observation *
-
                 <textarea
                     id="diaryObservation"
                     required
@@ -1353,14 +1446,12 @@
                 ></textarea>
             </label>
 
+
             <label>
                 Weather / Environmental Conditions
-
-                <textarea
-                    id="diaryWeather"
-                    placeholder="Temperature, rainfall, humidity, etc."
-                ></textarea>
+                <textarea id="diaryWeather"></textarea>
             </label>
+
 
             <button
                 class="primary-btn full"
@@ -1376,16 +1467,7 @@
 </div>
 
 
-<!-- TOAST -->
-
-<div
-    id="toast"
-    class="toast"
-></div>
-
-
 <!-- APP JAVASCRIPT -->
-
 <script src="./app.js"></script>
 
 </body>
