@@ -1,8 +1,7 @@
 /* =====================================================
    NAYAKHAP AGRO RESEARCH
-   SUPABASE CLOUD VERSION
+   SUPABASE CLOUD VERSION - UPDATED
 ===================================================== */
-
 
 /* =====================================================
    SUPABASE CONFIG
@@ -32,33 +31,41 @@ let farmers = [];
 let observations = [];
 let diaryEntries = [];
 
+let toastTimer = null;
+
 
 /* =====================================================
    DOM READY
 ===================================================== */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
+document.addEventListener("DOMContentLoaded", async () => {
+
+    try {
 
         setupNavigation();
-
         setupAuth();
-
         setupForms();
-
         setupSearch();
-
         setupModalBehavior();
 
         await checkAuth();
 
+    } catch (error) {
+
+        console.error("Application startup error:", error);
+
+        showAuthMessage(
+            "Application could not start. Please refresh the page.",
+            "error"
+        );
+
     }
-);
+
+});
 
 
 /* =====================================================
-   AUTH
+   AUTH SETUP
 ===================================================== */
 
 function setupAuth() {
@@ -72,144 +79,177 @@ function setupAuth() {
     const authForm =
         document.getElementById("authForm");
 
+    const logoutBtn =
+        document.getElementById("logoutBtn");
 
-    loginTab.addEventListener(
-        "click",
-        () => {
 
-            loginTab.classList.add("active");
+    /* ---------- LOGIN TAB ---------- */
 
-            signupTab.classList.remove("active");
+    loginTab?.addEventListener("click", () => {
 
+        loginTab.classList.add("active");
+        signupTab?.classList.remove("active");
+
+        const submitButton =
+            document.getElementById("authSubmit");
+
+        if (submitButton) {
+            submitButton.textContent = "Login";
+        }
+
+        const confirmWrap =
+            document.getElementById("confirmPasswordWrap");
+
+        if (confirmWrap) {
+            confirmWrap.style.display = "none";
+            confirmWrap.classList.add("hidden");
+        }
+
+        const confirmPassword =
+            document.getElementById("authConfirmPassword");
+
+        if (confirmPassword) {
+            confirmPassword.required = false;
+            confirmPassword.value = "";
+        }
+
+        clearAuthMessage();
+
+    });
+
+
+    /* ---------- SIGNUP TAB ---------- */
+
+    signupTab?.addEventListener("click", () => {
+
+        signupTab.classList.add("active");
+        loginTab?.classList.remove("active");
+
+        const submitButton =
+            document.getElementById("authSubmit");
+
+        if (submitButton) {
+            submitButton.textContent = "Create Account";
+        }
+
+        const confirmWrap =
+            document.getElementById("confirmPasswordWrap");
+
+        if (confirmWrap) {
+            confirmWrap.style.display = "block";
+            confirmWrap.classList.remove("hidden");
+        }
+
+        const confirmPassword =
+            document.getElementById("authConfirmPassword");
+
+        if (confirmPassword) {
+            confirmPassword.required = true;
+        }
+
+        clearAuthMessage();
+
+    });
+
+
+    /* ---------- AUTH FORM ---------- */
+
+    authForm?.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+
+        clearAuthMessage();
+
+        const isSignup =
+            signupTab?.classList.contains("active");
+
+        const email =
             document
-                .getElementById("authSubmit")
-                .textContent = "Login";
+                .getElementById("authEmail")
+                ?.value
+                .trim()
+                .toLowerCase();
 
+        const password =
             document
-                .getElementById("confirmPasswordWrap")
-                .classList.add("hidden");
+                .getElementById("authPassword")
+                ?.value || "";
 
+        const confirmPassword =
             document
                 .getElementById("authConfirmPassword")
-                .required = false;
+                ?.value || "";
 
-            clearAuthMessage();
 
+        /* ---------- VALIDATION ---------- */
+
+        if (!email || !password) {
+
+            showAuthMessage(
+                "Please enter email and password.",
+                "error"
+            );
+
+            return;
         }
-    );
 
 
-    signupTab.addEventListener(
-        "click",
-        () => {
+        if (!isValidEmail(email)) {
 
-            signupTab.classList.add("active");
+            showAuthMessage(
+                "Please enter a valid email address.",
+                "error"
+            );
 
-            loginTab.classList.remove("active");
-
-            document
-                .getElementById("authSubmit")
-                .textContent = "Create Account";
-
-            document
-                .getElementById("confirmPasswordWrap")
-                .classList.remove("hidden");
-
-            document
-                .getElementById("authConfirmPassword")
-                .required = true;
-
-            clearAuthMessage();
-
+            return;
         }
-    );
 
 
-    authForm.addEventListener(
-        "submit",
-        async event => {
+        if (password.length < 6) {
 
-            event.preventDefault();
+            showAuthMessage(
+                "Password must contain at least 6 characters.",
+                "error"
+            );
 
-            const isSignup =
-                signupTab.classList.contains("active");
-
-            const email =
-                document
-                    .getElementById("authEmail")
-                    .value
-                    .trim();
-
-            const password =
-                document
-                    .getElementById("authPassword")
-                    .value;
-
-            const confirmPassword =
-                document
-                    .getElementById("authConfirmPassword")
-                    .value;
+            return;
+        }
 
 
-            if (!email || !password) {
+        /* ---------- SIGNUP ---------- */
+
+        if (isSignup) {
+
+            if (password !== confirmPassword) {
 
                 showAuthMessage(
-                    "Please enter email and password.",
+                    "Passwords do not match.",
                     "error"
                 );
 
                 return;
             }
 
+            await signupUser(email, password);
 
-            if (isSignup) {
-
-                if (password !== confirmPassword) {
-
-                    showAuthMessage(
-                        "Passwords do not match.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                if (password.length < 6) {
-
-                    showAuthMessage(
-                        "Password must contain at least 6 characters.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                await signupUser(
-                    email,
-                    password
-                );
-
-            } else {
-
-                await loginUser(
-                    email,
-                    password
-                );
-
-            }
-
+            return;
         }
+
+
+        /* ---------- LOGIN ---------- */
+
+        await loginUser(email, password);
+
+    });
+
+
+    /* ---------- LOGOUT ---------- */
+
+    logoutBtn?.addEventListener(
+        "click",
+        logoutUser
     );
 
-
-    document
-        .getElementById("logoutBtn")
-        .addEventListener(
-            "click",
-            logoutUser
-        );
 }
 
 
@@ -217,70 +257,140 @@ function setupAuth() {
    SIGNUP
 ===================================================== */
 
-async function signupUser(
-    email,
-    password
-) {
+async function signupUser(email, password) {
 
     setAuthLoading(true);
 
+    clearAuthMessage();
 
-    const redirectUrl =
-        window.location.origin +
-        window.location.pathname;
+    try {
+
+        /*
+         * Use the current page URL as redirect.
+         * This works with GitHub Pages and normal hosting.
+         */
+
+        const redirectUrl =
+            window.location.origin +
+            window.location.pathname;
 
 
-    const {
-        data,
-        error
-    } = await supabaseClient.auth.signUp({
+        console.log("Creating account:", email);
 
-        email,
 
-        password,
+        const {
+            data,
+            error
+        } = await supabaseClient.auth.signUp({
 
-        options: {
+            email: email,
 
-            emailRedirectTo:
-                redirectUrl
+            password: password,
+
+            options: {
+
+                emailRedirectTo: redirectUrl
+
+            }
+
+        });
+
+
+        console.log("Signup response:", data, error);
+
+
+        /* ---------- ERROR ---------- */
+
+        if (error) {
+
+            console.error(
+                "Signup error:",
+                error
+            );
+
+            showAuthMessage(
+                getAuthErrorMessage(error),
+                "error"
+            );
+
+            return;
+        }
+
+
+        /* ---------- SUCCESS ---------- */
+
+        if (data?.user) {
+
+            /*
+             * Supabase can return a user without a session
+             * when email confirmation is enabled.
+             */
+
+            if (data.session) {
+
+                currentUser =
+                    data.user;
+
+                showAuthMessage(
+                    "Account created successfully!",
+                    "success"
+                );
+
+                await showApp();
+
+            } else {
+
+                showAuthMessage(
+                    "Account created successfully. Please check your email and confirm your account before logging in.",
+                    "success"
+                );
+
+                /*
+                 * Keep user on authentication screen.
+                 */
+
+                const passwordInput =
+                    document.getElementById("authPassword");
+
+                const confirmInput =
+                    document.getElementById(
+                        "authConfirmPassword"
+                    );
+
+                if (passwordInput) {
+                    passwordInput.value = "";
+                }
+
+                if (confirmInput) {
+                    confirmInput.value = "";
+                }
+
+            }
+
+        } else {
+
+            showAuthMessage(
+                "Account creation completed, but no user was returned. Please try logging in.",
+                "error"
+            );
 
         }
 
-    });
+    } catch (error) {
 
-
-    setAuthLoading(false);
-
-
-    if (error) {
+        console.error(
+            "Unexpected signup error:",
+            error
+        );
 
         showAuthMessage(
-            error.message,
+            "Something went wrong while creating the account. Please try again.",
             "error"
         );
 
-        return;
-    }
+    } finally {
 
-
-    if (data.session) {
-
-        currentUser =
-            data.user;
-
-        showAuthMessage(
-            "Account created successfully.",
-            "success"
-        );
-
-        await showApp();
-
-    } else {
-
-        showAuthMessage(
-            "Account created. Please check your email and confirm your account before logging in.",
-            "success"
-        );
+        setAuthLoading(false);
 
     }
 
@@ -291,45 +401,77 @@ async function signupUser(
    LOGIN
 ===================================================== */
 
-async function loginUser(
-    email,
-    password
-) {
+async function loginUser(email, password) {
 
     setAuthLoading(true);
 
+    clearAuthMessage();
 
-    const {
-        data,
-        error
-    } = await supabaseClient.auth.signInWithPassword({
+    try {
 
-        email,
+        const {
+            data,
+            error
+        } = await supabaseClient.auth.signInWithPassword({
 
-        password
+            email: email,
 
-    });
+            password: password
+
+        });
 
 
-    setAuthLoading(false);
+        if (error) {
+
+            console.error(
+                "Login error:",
+                error
+            );
+
+            showAuthMessage(
+                getAuthErrorMessage(error),
+                "error"
+            );
+
+            return;
+        }
 
 
-    if (error) {
+        if (!data?.user) {
+
+            showAuthMessage(
+                "Login failed. Please try again.",
+                "error"
+            );
+
+            return;
+        }
+
+
+        currentUser =
+            data.user;
+
+
+        await showApp();
+
+
+    } catch (error) {
+
+        console.error(
+            "Unexpected login error:",
+            error
+        );
 
         showAuthMessage(
-            error.message,
+            "Unable to login. Please try again.",
             "error"
         );
 
-        return;
+    } finally {
+
+        setAuthLoading(false);
+
     }
-
-
-    currentUser =
-        data.user;
-
-
-    await showApp();
 
 }
 
@@ -340,45 +482,74 @@ async function loginUser(
 
 async function logoutUser() {
 
-    const {
-        error
-    } = await supabaseClient.auth.signOut();
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient.auth.signOut();
 
 
-    if (error) {
+        if (error) {
+
+            showToast(
+                error.message
+            );
+
+            return;
+        }
+
+
+        currentUser = null;
+
+        fields = [];
+        farmers = [];
+        observations = [];
+        diaryEntries = [];
+
+
+        const appShell =
+            document.getElementById("appShell");
+
+        const authScreen =
+            document.getElementById("authScreen");
+
+
+        if (appShell) {
+            appShell.style.display = "none";
+        }
+
+        if (authScreen) {
+            authScreen.style.display = "flex";
+        }
+
+
+        clearAuthMessage();
+
+
+        const authForm =
+            document.getElementById("authForm");
+
+        authForm?.reset();
+
 
         showToast(
-            error.message
+            "Logged out successfully."
         );
 
-        return;
+
+    } catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
+        showToast(
+            "Logout failed."
+        );
+
     }
-
-
-    currentUser = null;
-
-    fields = [];
-
-    farmers = [];
-
-    observations = [];
-
-    diaryEntries = [];
-
-
-    document
-        .getElementById("appShell")
-        .style.display = "none";
-
-
-    document
-        .getElementById("authScreen")
-        .style.display = "flex";
-
-
-    showToast(
-        "Logged out successfully."
-    );
 
 }
 
@@ -389,44 +560,124 @@ async function logoutUser() {
 
 async function checkAuth() {
 
-    const {
-        data
-    } =
-        await supabaseClient.auth.getSession();
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient.auth.getSession();
 
 
-    if (data.session) {
+        if (error) {
 
-        currentUser =
-            data.session.user;
+            console.error(
+                "Session error:",
+                error
+            );
 
-        await showApp();
+            showAuthMessage(
+                "Could not check your login session.",
+                "error"
+            );
 
-    } else {
+            return;
+        }
 
-        document
-            .getElementById("authScreen")
-            .style.display = "flex";
 
-        document
-            .getElementById("appShell")
-            .style.display = "none";
+        if (data?.session?.user) {
+
+            currentUser =
+                data.session.user;
+
+            await showApp();
+
+        } else {
+
+            showLoginScreen();
+
+        }
+
+
+        /*
+         * Listen for login/logout/email confirmation events.
+         */
+
+        supabaseClient.auth.onAuthStateChange(
+            async (event, session) => {
+
+                console.log(
+                    "Auth event:",
+                    event
+                );
+
+
+                if (session?.user) {
+
+                    currentUser =
+                        session.user;
+
+                    /*
+                     * Do not unnecessarily reload
+                     * the application repeatedly.
+                     */
+
+                    if (
+                        document
+                            .getElementById("appShell")
+                            ?.style.display !== "flex"
+                    ) {
+
+                        await showApp();
+
+                    }
+
+                } else {
+
+                    currentUser = null;
+
+                    showLoginScreen();
+
+                }
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Auth check error:",
+            error
+        );
+
+        showLoginScreen();
 
     }
 
+}
 
-    supabaseClient.auth.onAuthStateChange(
-        async (_event, session) => {
 
-            if (session) {
+/* =====================================================
+   SHOW LOGIN SCREEN
+===================================================== */
 
-                currentUser =
-                    session.user;
+function showLoginScreen() {
 
-            }
+    const authScreen =
+        document.getElementById("authScreen");
 
-        }
-    );
+    const appShell =
+        document.getElementById("appShell");
+
+
+    if (authScreen) {
+        authScreen.style.display = "flex";
+    }
+
+    if (appShell) {
+        appShell.style.display = "none";
+    }
 
 }
 
@@ -437,20 +688,41 @@ async function checkAuth() {
 
 async function showApp() {
 
-    document
-        .getElementById("authScreen")
-        .style.display = "none";
+    if (!currentUser) {
+
+        showLoginScreen();
+
+        return;
+
+    }
 
 
-    document
-        .getElementById("appShell")
-        .style.display = "flex";
+    const authScreen =
+        document.getElementById("authScreen");
+
+    const appShell =
+        document.getElementById("appShell");
 
 
-    document
-        .getElementById("userEmail")
-        .textContent =
-        currentUser?.email || "";
+    if (authScreen) {
+        authScreen.style.display = "none";
+    }
+
+    if (appShell) {
+        appShell.style.display = "flex";
+    }
+
+
+    const userEmail =
+        document.getElementById("userEmail");
+
+
+    if (userEmail) {
+
+        userEmail.textContent =
+            currentUser.email || "";
+
+    }
 
 
     await loadAllData();
@@ -459,12 +731,14 @@ async function showApp() {
 
 
 /* =====================================================
-   LOAD DATA
+   LOAD ALL DATA
 ===================================================== */
 
 async function loadAllData() {
 
-    if (!currentUser) return;
+    if (!currentUser) {
+        return;
+    }
 
 
     try {
@@ -544,45 +818,54 @@ async function loadAllData() {
         ]);
 
 
-        if (fieldsResponse.error)
+        if (fieldsResponse.error) {
+
             console.error(
                 "Fields:",
                 fieldsResponse.error
             );
 
+        }
 
-        if (farmersResponse.error)
+
+        if (farmersResponse.error) {
+
             console.error(
                 "Farmers:",
                 farmersResponse.error
             );
 
+        }
 
-        if (observationsResponse.error)
+
+        if (observationsResponse.error) {
+
             console.error(
                 "Observations:",
                 observationsResponse.error
             );
 
+        }
 
-        if (diaryResponse.error)
+
+        if (diaryResponse.error) {
+
             console.error(
                 "Diary:",
                 diaryResponse.error
             );
 
+        }
+
 
         fields =
             fieldsResponse.data || [];
 
-
         farmers =
             farmersResponse.data || [];
 
-
         observations =
             observationsResponse.data || [];
-
 
         diaryEntries =
             diaryResponse.data || [];
@@ -593,7 +876,10 @@ async function loadAllData() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Load data error:",
+            error
+        );
 
         showToast(
             "Could not load cloud data."
@@ -611,27 +897,23 @@ async function loadAllData() {
 function setupNavigation() {
 
     const buttons =
-        document.querySelectorAll(
-            ".nav-btn"
+        document.querySelectorAll(".nav-btn");
+
+
+    buttons.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                showPage(
+                    button.dataset.page
+                );
+
+            }
         );
 
-
-    buttons.forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    showPage(
-                        button.dataset.page
-                    );
-
-                }
-            );
-
-        }
-    );
+    });
 
 
     document
@@ -642,7 +924,7 @@ function setupNavigation() {
 
                 document
                     .querySelector(".sidebar")
-                    .classList
+                    ?.classList
                     .toggle("open");
 
             }
@@ -655,14 +937,11 @@ function showPage(page) {
 
     document
         .querySelectorAll(".page")
-        .forEach(
-            section => {
+        .forEach(section => {
 
-                section.classList
-                    .remove("active");
+            section.classList.remove("active");
 
-            }
-        );
+        });
 
 
     const target =
@@ -678,16 +957,14 @@ function showPage(page) {
 
     document
         .querySelectorAll(".nav-btn")
-        .forEach(
-            button => {
+        .forEach(button => {
 
-                button.classList.toggle(
-                    "active",
-                    button.dataset.page === page
-                );
+            button.classList.toggle(
+                "active",
+                button.dataset.page === page
+            );
 
-            }
-        );
+        });
 
 
     const titles = {
@@ -713,11 +990,17 @@ function showPage(page) {
     };
 
 
-    document
-        .getElementById("pageTitle")
-        .textContent =
-        titles[page] ||
-        "Research Dashboard";
+    const pageTitle =
+        document.getElementById("pageTitle");
+
+
+    if (pageTitle) {
+
+        pageTitle.textContent =
+            titles[page] ||
+            "Research Dashboard";
+
+    }
 
 
     document
@@ -736,7 +1019,7 @@ function setupForms() {
 
     document
         .getElementById("fieldForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveField
         );
@@ -744,7 +1027,7 @@ function setupForms() {
 
     document
         .getElementById("farmerForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveFarmer
         );
@@ -752,7 +1035,7 @@ function setupForms() {
 
     document
         .getElementById("healthForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveHealthObservation
         );
@@ -760,22 +1043,26 @@ function setupForms() {
 
     document
         .getElementById("diaryForm")
-        .addEventListener(
+        ?.addEventListener(
             "submit",
             saveDiaryEntry
         );
 
 
-    document
-        .getElementById("healthDate")
-        .value =
-        today();
+    const healthDate =
+        document.getElementById("healthDate");
+
+    const diaryDate =
+        document.getElementById("diaryDate");
 
 
-    document
-        .getElementById("diaryDate")
-        .value =
-        today();
+    if (healthDate) {
+        healthDate.value = today();
+    }
+
+    if (diaryDate) {
+        diaryDate.value = today();
+    }
 
 }
 
@@ -811,8 +1098,7 @@ async function saveField(event) {
             getValue("fieldVariety"),
 
         sowing_date:
-            getValue("fieldDate") ||
-            null,
+            getValue("fieldDate") || null,
 
         irrigation_source:
             getValue("fieldWater"),
@@ -841,12 +1127,18 @@ async function saveField(event) {
 
     const {
         error
-    } = await supabaseClient
-        .from("fields")
-        .insert(record);
+    } =
+        await supabaseClient
+            .from("fields")
+            .insert(record);
 
 
     if (error) {
+
+        console.error(
+            "Save field:",
+            error
+        );
 
         showToast(
             "Could not save field: " +
@@ -879,7 +1171,14 @@ async function saveFarmer(event) {
     event.preventDefault();
 
 
-    if (!currentUser) return;
+    if (!currentUser) {
+
+        showToast(
+            "Please login first."
+        );
+
+        return;
+    }
 
 
     const record = {
@@ -898,11 +1197,8 @@ async function saveFarmer(event) {
 
         notes:
             [
-
                 getValue("farmerProblem"),
-
                 getValue("farmerObservation")
-
             ]
             .filter(Boolean)
             .join(" | "),
@@ -915,12 +1211,18 @@ async function saveFarmer(event) {
 
     const {
         error
-    } = await supabaseClient
-        .from("farmers")
-        .insert(record);
+    } =
+        await supabaseClient
+            .from("farmers")
+            .insert(record);
 
 
     if (error) {
+
+        console.error(
+            "Save farmer:",
+            error
+        );
 
         showToast(
             "Could not save farmer: " +
@@ -953,7 +1255,14 @@ async function saveHealthObservation(event) {
     event.preventDefault();
 
 
-    if (!currentUser) return;
+    if (!currentUser) {
+
+        showToast(
+            "Please login first."
+        );
+
+        return;
+    }
 
 
     const record = {
@@ -988,12 +1297,18 @@ async function saveHealthObservation(event) {
 
     const {
         error
-    } = await supabaseClient
-        .from("crop_observations")
-        .insert(record);
+    } =
+        await supabaseClient
+            .from("crop_observations")
+            .insert(record);
 
 
     if (error) {
+
+        console.error(
+            "Save observation:",
+            error
+        );
 
         showToast(
             "Could not save observation: " +
@@ -1008,10 +1323,14 @@ async function saveHealthObservation(event) {
 
     event.target.reset();
 
-    document
-        .getElementById("healthDate")
-        .value =
-        today();
+
+    const healthDate =
+        document.getElementById("healthDate");
+
+    if (healthDate) {
+        healthDate.value = today();
+    }
+
 
     await loadAllData();
 
@@ -1031,7 +1350,14 @@ async function saveDiaryEntry(event) {
     event.preventDefault();
 
 
-    if (!currentUser) return;
+    if (!currentUser) {
+
+        showToast(
+            "Please login first."
+        );
+
+        return;
+    }
 
 
     const record = {
@@ -1059,12 +1385,18 @@ async function saveDiaryEntry(event) {
 
     const {
         error
-    } = await supabaseClient
-        .from("field_diary")
-        .insert(record);
+    } =
+        await supabaseClient
+            .from("field_diary")
+            .insert(record);
 
 
     if (error) {
+
+        console.error(
+            "Save diary:",
+            error
+        );
 
         showToast(
             "Could not save diary: " +
@@ -1079,10 +1411,14 @@ async function saveDiaryEntry(event) {
 
     event.target.reset();
 
-    document
-        .getElementById("diaryDate")
-        .value =
-        today();
+
+    const diaryDate =
+        document.getElementById("diaryDate");
+
+    if (diaryDate) {
+        diaryDate.value = today();
+    }
+
 
     await loadAllData();
 
@@ -1100,9 +1436,7 @@ async function saveDiaryEntry(event) {
 function setupSearch() {
 
     const search =
-        document.getElementById(
-            "fieldSearch"
-        );
+        document.getElementById("fieldSearch");
 
 
     search?.addEventListener(
@@ -1139,46 +1473,41 @@ function renderAll() {
 function renderFields() {
 
     const tbody =
-        document.getElementById(
-            "fieldTable"
-        );
+        document.getElementById("fieldTable");
+
+
+    if (!tbody) return;
 
 
     const search =
         (
             document
-                .getElementById(
-                    "fieldSearch"
-                )
+                .getElementById("fieldSearch")
                 ?.value || ""
         )
         .toLowerCase();
 
 
     const filtered =
-        fields.filter(
-            field => {
+        fields.filter(field => {
 
-                const text = [
+            const text = [
 
-                    field.field_name,
+                field.field_name,
 
-                    field.crop,
+                field.crop,
 
-                    field.variety
+                field.variety
 
-                ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
+            ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
 
 
-                return text.includes(
-                    search
-                );
+            return text.includes(search);
 
-            }
-        );
+        });
 
 
     if (!filtered.length) {
@@ -1197,8 +1526,7 @@ function renderFields() {
 
     tbody.innerHTML =
         filtered
-            .map(
-                field => `
+            .map(field => `
 
                 <tr>
 
@@ -1235,20 +1563,17 @@ function renderFields() {
                     </td>
 
                     <td>
-
                         <button
                             class="delete-btn"
                             onclick="deleteField('${field.id}')"
                         >
                             Delete
                         </button>
-
                     </td>
 
                 </tr>
 
-            `
-            )
+            `)
             .join("");
 
 }
@@ -1261,9 +1586,10 @@ function renderFields() {
 function renderFarmers() {
 
     const tbody =
-        document.getElementById(
-            "farmerTable"
-        );
+        document.getElementById("farmerTable");
+
+
+    if (!tbody) return;
 
 
     if (!farmers.length) {
@@ -1282,8 +1608,7 @@ function renderFarmers() {
 
     tbody.innerHTML =
         farmers
-            .map(
-                farmer => `
+            .map(farmer => `
 
                 <tr>
 
@@ -1333,8 +1658,7 @@ function renderFarmers() {
 
                 </tr>
 
-            `
-            )
+            `)
             .join("");
 
 }
@@ -1348,17 +1672,24 @@ function openFarmerProfile(id) {
 
     const farmer =
         farmers.find(
-            item => String(item.id) === String(id)
+            item =>
+                String(item.id) === String(id)
         );
 
 
     if (!farmer) return;
 
 
-    document
-        .getElementById("profileTitle")
-        .textContent =
-        `Farmer ${farmer.farmer_code || ""}`;
+    const title =
+        document.getElementById("profileTitle");
+
+
+    if (title) {
+
+        title.textContent =
+            `Farmer ${farmer.farmer_code || ""}`;
+
+    }
 
 
     const notes =
@@ -1378,148 +1709,176 @@ function openFarmerProfile(id) {
         "Not recorded";
 
 
+    const farmerCode =
+        String(
+            farmer.farmer_code || ""
+        )
+        .toLowerCase();
+
+
     const relatedHealth =
-        observations.filter(
-            item =>
-                String(item.field_code || "")
-                    .toLowerCase()
-                    ===
-                String(farmer.farmer_code || "")
-                    .toLowerCase()
-        );
+        observations.filter(item => {
+
+            return String(
+                item.field_code || ""
+            )
+            .toLowerCase() === farmerCode;
+
+        });
 
 
     const relatedDiary =
-        diaryEntries.filter(
-            item =>
-                String(item.field_code || "")
-                    .toLowerCase()
-                    ===
-                String(farmer.farmer_code || "")
-                    .toLowerCase()
+        diaryEntries.filter(item => {
+
+            return String(
+                item.field_code || ""
+            )
+            .toLowerCase() === farmerCode;
+
+        });
+
+
+    const content =
+        document.getElementById(
+            "farmerProfileContent"
         );
 
 
-    document
-        .getElementById(
-            "farmerProfileContent"
-        )
-        .innerHTML = `
+    if (!content) return;
 
-            <div class="profile-header">
 
-                <div class="profile-avatar">
-                    👨‍🌾
+    content.innerHTML = `
+
+        <div class="profile-header">
+
+            <div class="profile-avatar">
+                👨‍🌾
+            </div>
+
+            <div>
+
+                <div class="profile-code">
+                    FARMER CODE
                 </div>
 
-                <div>
-
-                    <div class="profile-code">
-                        FARMER CODE
-                    </div>
-
-                    <h3>
-                        ${escapeHtml(
-                            farmer.farmer_code || "-"
-                        )}
-                    </h3>
-
-                </div>
+                <h3>
+                    ${escapeHtml(
+                        farmer.farmer_code || "-"
+                    )}
+                </h3>
 
             </div>
 
-
-            <div class="profile-grid">
-
-                <div class="profile-item">
-
-                    <small>Main Crop</small>
-
-                    <strong>
-                        ${escapeHtml(
-                            farmer.main_crop || "-"
-                        )}
-                    </strong>
-
-                </div>
+        </div>
 
 
-                <div class="profile-item">
+        <div class="profile-grid">
 
-                    <small>Seed Source</small>
+            <div class="profile-item">
 
-                    <strong>
-                        ${escapeHtml(
-                            farmer.seed_source || "-"
-                        )}
-                    </strong>
+                <small>
+                    Main Crop
+                </small>
 
-                </div>
-
-
-                <div class="profile-item">
-
-                    <small>Irrigation</small>
-
-                    <strong>
-                        ${escapeHtml(
-                            farmer.farming_method || "-"
-                        )}
-                    </strong>
-
-                </div>
-
-
-                <div class="profile-item">
-
-                    <small>Health Records</small>
-
-                    <strong>
-                        ${relatedHealth.length}
-                    </strong>
-
-                </div>
+                <strong>
+                    ${escapeHtml(
+                        farmer.main_crop || "-"
+                    )}
+                </strong>
 
             </div>
 
 
             <div class="profile-item">
 
-                <small>Major Farming Problem</small>
+                <small>
+                    Seed Source
+                </small>
 
                 <strong>
-                    ${escapeHtml(problem)}
+                    ${escapeHtml(
+                        farmer.seed_source || "-"
+                    )}
                 </strong>
 
             </div>
-
-            <br>
 
 
             <div class="profile-item">
 
-                <small>Farmer's Observation</small>
+                <small>
+                    Irrigation
+                </small>
 
                 <strong>
-                    ${escapeHtml(observation)}
+                    ${escapeHtml(
+                        farmer.farming_method || "-"
+                    )}
                 </strong>
 
             </div>
-
-            <br>
 
 
             <div class="profile-item">
 
-                <small>Linked Diary Entries</small>
+                <small>
+                    Health Records
+                </small>
 
                 <strong>
-                    ${relatedDiary.length}
+                    ${relatedHealth.length}
                 </strong>
 
             </div>
 
-        `;
+        </div>
+
+
+        <div class="profile-item">
+
+            <small>
+                Major Farming Problem
+            </small>
+
+            <strong>
+                ${escapeHtml(problem)}
+            </strong>
+
+        </div>
+
+
+        <br>
+
+
+        <div class="profile-item">
+
+            <small>
+                Farmer's Observation
+            </small>
+
+            <strong>
+                ${escapeHtml(observation)}
+            </strong>
+
+        </div>
+
+
+        <br>
+
+
+        <div class="profile-item">
+
+            <small>
+                Linked Diary Entries
+            </small>
+
+            <strong>
+                ${relatedDiary.length}
+            </strong>
+
+        </div>
+
+    `;
 
 
     openModal(
@@ -1541,6 +1900,9 @@ function renderHealth() {
         );
 
 
+    if (!tbody) return;
+
+
     if (!observations.length) {
 
         tbody.innerHTML = `
@@ -1557,8 +1919,7 @@ function renderHealth() {
 
     tbody.innerHTML =
         observations
-            .map(
-                item => `
+            .map(item => `
 
                 <tr>
 
@@ -1611,8 +1972,7 @@ function renderHealth() {
 
                 </tr>
 
-            `
-            )
+            `)
             .join("");
 
 }
@@ -1630,6 +1990,9 @@ function renderDiary() {
         );
 
 
+    if (!container) return;
+
+
     if (!diaryEntries.length) {
 
         container.innerHTML = `
@@ -1644,8 +2007,7 @@ function renderDiary() {
 
     container.innerHTML =
         diaryEntries
-            .map(
-                entry => `
+            .map(entry => `
 
                 <div class="diary-card">
 
@@ -1698,8 +2060,7 @@ function renderDiary() {
 
                 </div>
 
-            `
-            )
+            `)
             .join("");
 
 }
@@ -1716,15 +2077,18 @@ function updateDashboard() {
         fields.length
     );
 
+
     animateNumber(
         "farmerCount",
         farmers.length
     );
 
+
     animateNumber(
         "healthCount",
         observations.length
     );
+
 
     animateNumber(
         "diaryCount",
@@ -1743,10 +2107,7 @@ function updateDashboard() {
    NUMBER ANIMATION
 ===================================================== */
 
-function animateNumber(
-    id,
-    target
-) {
+function animateNumber(id, target) {
 
     const element =
         document.getElementById(id);
@@ -1768,8 +2129,7 @@ function animateNumber(
     }
 
 
-    const duration =
-        500;
+    const duration = 500;
 
     const startTime =
         performance.now();
@@ -1827,6 +2187,9 @@ function renderCropDistribution() {
         );
 
 
+    if (!container) return;
+
+
     if (!fields.length) {
 
         container.innerHTML = `
@@ -1842,20 +2205,17 @@ function renderCropDistribution() {
     const counts = {};
 
 
-    fields.forEach(
-        field => {
+    fields.forEach(field => {
 
-            const crop =
-                field.crop ||
-                "Unknown";
+        const crop =
+            field.crop ||
+            "Unknown";
 
 
-            counts[crop] =
-                (counts[crop] || 0) +
-                1;
+        counts[crop] =
+            (counts[crop] || 0) + 1;
 
-        }
-    );
+    });
 
 
     const entries =
@@ -1872,51 +2232,49 @@ function renderCropDistribution() {
 
     container.innerHTML =
         entries
-            .map(
-                ([crop, count]) => {
+            .map(([crop, count]) => {
 
-                    const percentage =
-                        Math.max(
-                            8,
-                            Math.round(
-                                (count / max) *
-                                100
-                            )
-                        );
+                const percentage =
+                    Math.max(
+                        8,
+                        Math.round(
+                            (count / max) *
+                            100
+                        )
+                    );
 
 
-                    return `
+                return `
 
-                        <div class="crop-row">
+                    <div class="crop-row">
 
-                            <div class="crop-top">
+                        <div class="crop-top">
 
-                                <span>
-                                    🌱
-                                    ${escapeHtml(crop)}
-                                </span>
+                            <span>
+                                🌱
+                                ${escapeHtml(crop)}
+                            </span>
 
-                                <strong>
-                                    ${count}
-                                </strong>
-
-                            </div>
-
-                            <div class="crop-bar">
-
-                                <div
-                                    class="crop-bar-fill"
-                                    style="width:${percentage}%"
-                                ></div>
-
-                            </div>
+                            <strong>
+                                ${count}
+                            </strong>
 
                         </div>
 
-                    `;
+                        <div class="crop-bar">
 
-                }
-            )
+                            <div
+                                class="crop-bar-fill"
+                                style="width:${percentage}%"
+                            ></div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
             .join("");
 
 }
@@ -1934,73 +2292,90 @@ function renderRecentActivity() {
         );
 
 
+    if (!container) return;
+
+
     const activities = [];
 
 
     fields
         .slice(0, 5)
-        .forEach(
-            item => {
+        .forEach(item => {
 
-                activities.push({
+            activities.push({
 
-                    date:
-                        item.created_at,
+                date:
+                    item.created_at,
 
-                    text:
-                        `Field added: ${
-                            item.field_name ||
-                            "Unknown"
-                        }`
+                text:
+                    `Field added: ${
+                        item.field_name ||
+                        "Unknown"
+                    }`
 
-                });
+            });
 
-            }
-        );
+        });
+
+
+    farmers
+        .slice(0, 5)
+        .forEach(item => {
+
+            activities.push({
+
+                date:
+                    item.created_at,
+
+                text:
+                    `Farmer added: ${
+                        item.farmer_code ||
+                        "Unknown"
+                    }`
+
+            });
+
+        });
 
 
     observations
         .slice(0, 5)
-        .forEach(
-            item => {
+        .forEach(item => {
 
-                activities.push({
+            activities.push({
 
-                    date:
-                        item.created_at,
+                date:
+                    item.created_at,
 
-                    text:
-                        `Crop observation: ${
-                            item.crop_name ||
-                            "Unknown"
-                        }`
+                text:
+                    `Crop observation: ${
+                        item.crop_name ||
+                        "Unknown"
+                    }`
 
-                });
+            });
 
-            }
-        );
+        });
 
 
     diaryEntries
         .slice(0, 5)
-        .forEach(
-            item => {
+        .forEach(item => {
 
-                activities.push({
+            activities.push({
 
-                    date:
-                        item.created_at,
+                date:
+                    item.created_at,
 
-                    text:
-                        `Diary entry: ${
-                            item.field_code ||
-                            "Field visit"
-                        }`
+                text:
+                    `Diary entry: ${
+                        item.field_code ||
+                        "Field visit"
+                    }`
 
-                });
+            });
 
-            }
-        );
+        });
 
 
     activities.sort(
@@ -2025,34 +2400,31 @@ function renderRecentActivity() {
     container.innerHTML =
         activities
             .slice(0, 6)
-            .map(
-                item => `
+            .map(item => `
 
-                    <div class="activity-item">
+                <div class="activity-item">
 
-                        <span class="activity-dot">
-                        </span>
+                    <span class="activity-dot"></span>
 
-                        <div>
+                    <div>
 
-                            <div class="activity-text">
-                                ${escapeHtml(
-                                    item.text
-                                )}
-                            </div>
+                        <div class="activity-text">
+                            ${escapeHtml(
+                                item.text
+                            )}
+                        </div>
 
-                            <div class="activity-time">
-                                ${formatDateTime(
-                                    item.date
-                                )}
-                            </div>
-
+                        <div class="activity-time">
+                            ${formatDateTime(
+                                item.date
+                            )}
                         </div>
 
                     </div>
 
-                `
-            )
+                </div>
+
+            `)
             .join("");
 
 }
@@ -2073,14 +2445,15 @@ async function deleteField(id) {
 
     const {
         error
-    } = await supabaseClient
-        .from("fields")
-        .delete()
-        .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+    } =
+        await supabaseClient
+            .from("fields")
+            .delete()
+            .eq("id", id)
+            .eq(
+                "user_id",
+                currentUser.id
+            );
 
 
     if (error) {
@@ -2117,14 +2490,15 @@ async function deleteFarmer(id) {
 
     const {
         error
-    } = await supabaseClient
-        .from("farmers")
-        .delete()
-        .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+    } =
+        await supabaseClient
+            .from("farmers")
+            .delete()
+            .eq("id", id)
+            .eq(
+                "user_id",
+                currentUser.id
+            );
 
 
     if (error) {
@@ -2161,14 +2535,15 @@ async function deleteObservation(id) {
 
     const {
         error
-    } = await supabaseClient
-        .from("crop_observations")
-        .delete()
-        .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+    } =
+        await supabaseClient
+            .from("crop_observations")
+            .delete()
+            .eq("id", id)
+            .eq(
+                "user_id",
+                currentUser.id
+            );
 
 
     if (error) {
@@ -2205,14 +2580,15 @@ async function deleteDiary(id) {
 
     const {
         error
-    } = await supabaseClient
-        .from("field_diary")
-        .delete()
-        .eq("id", id)
-        .eq(
-            "user_id",
-            currentUser.id
-        );
+    } =
+        await supabaseClient
+            .from("field_diary")
+            .delete()
+            .eq("id", id)
+            .eq(
+                "user_id",
+                currentUser.id
+            );
 
 
     if (error) {
@@ -2235,7 +2611,7 @@ async function deleteDiary(id) {
 
 
 /* =====================================================
-   DELETE ALL
+   DELETE ALL DATA
 ===================================================== */
 
 async function deleteAllData() {
@@ -2267,10 +2643,7 @@ async function deleteAllData() {
     ];
 
 
-    for (
-        const table
-        of tables
-    ) {
+    for (const table of tables) {
 
         const {
             error
@@ -2291,9 +2664,14 @@ async function deleteAllData() {
                 error
             );
 
+
+            /*
+             * research_samples may not exist
+             * in the current database.
+             */
+
             if (
-                table ===
-                "research_samples"
+                table === "research_samples"
             ) {
 
                 continue;
@@ -2302,7 +2680,7 @@ async function deleteAllData() {
 
 
             showToast(
-                `Could not clear ${table}.`
+                `Could not clear ${table}: ${error.message}`
             );
 
             return;
@@ -2322,7 +2700,7 @@ async function deleteAllData() {
 
 
 /* =====================================================
-   EXPORT
+   EXPORT BACKUP
 ===================================================== */
 
 async function exportBackup() {
@@ -2343,7 +2721,7 @@ async function exportBackup() {
             "NayaKhap Agro Research",
 
         version:
-            "2.0",
+            "3.0",
 
         exported_at:
             new Date().toISOString(),
@@ -2388,6 +2766,7 @@ async function exportBackup() {
 
     a.href = url;
 
+
     a.download =
         `nayakhap-research-backup-${today()}.json`;
 
@@ -2410,13 +2789,13 @@ async function exportBackup() {
 
 
 /* =====================================================
-   RESTORE
+   RESTORE BACKUP
 ===================================================== */
 
 async function restoreBackup(event) {
 
     const file =
-        event.target.files[0];
+        event.target.files?.[0];
 
 
     if (!file) return;
@@ -2445,11 +2824,16 @@ async function restoreBackup(event) {
 
 
         alert(
-            "Backup file is valid.\n\nFor safety, automatic cloud restore is disabled in this version. Your current cloud data has NOT been changed."
+            "Backup file is valid.\n\nAutomatic cloud restore is disabled for safety. Your current cloud data has NOT been changed."
         );
 
 
     } catch (error) {
+
+        console.error(
+            "Restore error:",
+            error
+        );
 
         showToast(
             "Invalid backup file."
@@ -2499,28 +2883,26 @@ function setupModalBehavior() {
 
     document
         .querySelectorAll(".modal")
-        .forEach(
-            modal => {
+        .forEach(modal => {
 
-                modal.addEventListener(
-                    "click",
-                    event => {
+            modal.addEventListener(
+                "click",
+                event => {
 
-                        if (
-                            event.target ===
-                            modal
-                        ) {
+                    if (
+                        event.target === modal
+                    ) {
 
-                            modal.classList
-                                .remove("open");
-
-                        }
+                        modal.classList.remove(
+                            "open"
+                        );
 
                     }
-                );
 
-            }
-        );
+                }
+            );
+
+        });
 
 
     document.addEventListener(
@@ -2535,14 +2917,13 @@ function setupModalBehavior() {
                     .querySelectorAll(
                         ".modal.open"
                     )
-                    .forEach(
-                        modal => {
+                    .forEach(modal => {
 
-                            modal.classList
-                                .remove("open");
+                        modal.classList.remove(
+                            "open"
+                        );
 
-                        }
-                    );
+                    });
 
             }
 
@@ -2710,17 +3091,119 @@ function escapeHtml(value) {
 
 
 /* =====================================================
+   EMAIL VALIDATION
+===================================================== */
+
+function isValidEmail(email) {
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(email);
+
+}
+
+
+/* =====================================================
+   AUTH ERROR HANDLING
+===================================================== */
+
+function getAuthErrorMessage(error) {
+
+    if (!error) {
+
+        return "Something went wrong.";
+
+    }
+
+
+    const message =
+        String(
+            error.message || ""
+        );
+
+
+    const lower =
+        message.toLowerCase();
+
+
+    if (
+        lower.includes("user already registered")
+    ) {
+
+        return "This email is already registered. Please login instead.";
+
+    }
+
+
+    if (
+        lower.includes("email not confirmed")
+    ) {
+
+        return "Please confirm your email address first, then login.";
+
+    }
+
+
+    if (
+        lower.includes("invalid login credentials")
+    ) {
+
+        return "Incorrect email or password.";
+
+    }
+
+
+    if (
+        lower.includes("password")
+        &&
+        lower.includes("6")
+    ) {
+
+        return "Password must contain at least 6 characters.";
+
+    }
+
+
+    if (
+        lower.includes("rate limit")
+        ||
+        lower.includes("too many requests")
+    ) {
+
+        return "Too many attempts. Please wait a few minutes and try again.";
+
+    }
+
+
+    if (
+        lower.includes("email")
+        &&
+        lower.includes("disabled")
+    ) {
+
+        return "Email signup is currently disabled in Supabase.";
+
+    }
+
+
+    return message ||
+        "Authentication failed. Please try again.";
+
+}
+
+
+/* =====================================================
    AUTH UI
 ===================================================== */
 
-function setAuthLoading(
-    loading
-) {
+function setAuthLoading(loading) {
 
     const button =
         document.getElementById(
             "authSubmit"
         );
+
+
+    if (!button) return;
 
 
     if (loading) {
@@ -2737,10 +3220,8 @@ function setAuthLoading(
 
         const signup =
             document
-                .getElementById(
-                    "signupTab"
-                )
-                .classList
+                .getElementById("signupTab")
+                ?.classList
                 .contains("active");
 
 
@@ -2765,6 +3246,17 @@ function showAuthMessage(
         );
 
 
+    if (!box) {
+
+        console.log(
+            "Auth message:",
+            message
+        );
+
+        return;
+    }
+
+
     box.textContent =
         message;
 
@@ -2783,6 +3275,9 @@ function clearAuthMessage() {
         );
 
 
+    if (!box) return;
+
+
     box.textContent =
         "";
 
@@ -2797,9 +3292,6 @@ function clearAuthMessage() {
    TOAST
 ===================================================== */
 
-let toastTimer = null;
-
-
 function showToast(message) {
 
     const toast =
@@ -2808,7 +3300,21 @@ function showToast(message) {
         );
 
 
-    if (!toast) return;
+    /*
+     * If toast element does not exist in index.html,
+     * show a browser alert instead of silently doing nothing.
+     */
+
+    if (!toast) {
+
+        console.log(
+            "Toast:",
+            message
+        );
+
+        return;
+
+    }
 
 
     toast.textContent =
