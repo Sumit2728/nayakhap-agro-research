@@ -1,7 +1,9 @@
 /* =====================================================
    NAYAKHAP AGRO RESEARCH
-   SUPABASE CLOUD VERSION - UPDATED
+   SUPABASE CLOUD VERSION
+   UPDATED AUTH + DATABASE VERSION
 ===================================================== */
+
 
 /* =====================================================
    SUPABASE CONFIG
@@ -40,26 +42,13 @@ let toastTimer = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-    try {
+    setupNavigation();
+    setupAuth();
+    setupForms();
+    setupSearch();
+    setupModalBehavior();
 
-        setupNavigation();
-        setupAuth();
-        setupForms();
-        setupSearch();
-        setupModalBehavior();
-
-        await checkAuth();
-
-    } catch (error) {
-
-        console.error("Application startup error:", error);
-
-        showAuthMessage(
-            "Application could not start. Please refresh the page.",
-            "error"
-        );
-
-    }
+    await checkAuth();
 
 });
 
@@ -79,38 +68,43 @@ function setupAuth() {
     const authForm =
         document.getElementById("authForm");
 
-    const logoutBtn =
-        document.getElementById("logoutBtn");
+    const confirmWrap =
+        document.getElementById("confirmPasswordWrap");
+
+    const confirmInput =
+        document.getElementById("authConfirmPassword");
+
+    const submitButton =
+        document.getElementById("authSubmit");
 
 
-    /* ---------- LOGIN TAB ---------- */
+    if (!loginTab || !signupTab || !authForm) {
+        console.error("Authentication elements not found.");
+        return;
+    }
 
-    loginTab?.addEventListener("click", () => {
+
+    /* ---------------------------------------------
+       LOGIN TAB
+    --------------------------------------------- */
+
+    loginTab.addEventListener("click", () => {
 
         loginTab.classList.add("active");
-        signupTab?.classList.remove("active");
+        signupTab.classList.remove("active");
 
-        const submitButton =
-            document.getElementById("authSubmit");
-
-        if (submitButton) {
-            submitButton.textContent = "Login";
-        }
-
-        const confirmWrap =
-            document.getElementById("confirmPasswordWrap");
+        submitButton.textContent = "Login";
 
         if (confirmWrap) {
-            confirmWrap.style.display = "none";
             confirmWrap.classList.add("hidden");
         }
 
-        const confirmPassword =
-            document.getElementById("authConfirmPassword");
+        if (confirmInput) {
 
-        if (confirmPassword) {
-            confirmPassword.required = false;
-            confirmPassword.value = "";
+            confirmInput.required = false;
+            confirmInput.disabled = true;
+            confirmInput.value = "";
+
         }
 
         clearAuthMessage();
@@ -118,33 +112,26 @@ function setupAuth() {
     });
 
 
-    /* ---------- SIGNUP TAB ---------- */
+    /* ---------------------------------------------
+       SIGNUP TAB
+    --------------------------------------------- */
 
-    signupTab?.addEventListener("click", () => {
+    signupTab.addEventListener("click", () => {
 
         signupTab.classList.add("active");
-        loginTab?.classList.remove("active");
+        loginTab.classList.remove("active");
 
-        const submitButton =
-            document.getElementById("authSubmit");
-
-        if (submitButton) {
-            submitButton.textContent = "Create Account";
-        }
-
-        const confirmWrap =
-            document.getElementById("confirmPasswordWrap");
+        submitButton.textContent = "Create Account";
 
         if (confirmWrap) {
-            confirmWrap.style.display = "block";
             confirmWrap.classList.remove("hidden");
         }
 
-        const confirmPassword =
-            document.getElementById("authConfirmPassword");
+        if (confirmInput) {
 
-        if (confirmPassword) {
-            confirmPassword.required = true;
+            confirmInput.disabled = false;
+            confirmInput.required = true;
+
         }
 
         clearAuthMessage();
@@ -152,28 +139,31 @@ function setupAuth() {
     });
 
 
-    /* ---------- AUTH FORM ---------- */
+    /* ---------------------------------------------
+       AUTH FORM SUBMIT
+    --------------------------------------------- */
 
-    authForm?.addEventListener("submit", async (event) => {
+    authForm.addEventListener("submit", async (event) => {
 
         event.preventDefault();
 
-        clearAuthMessage();
-
         const isSignup =
-            signupTab?.classList.contains("active");
+            signupTab.classList.contains("active");
+
 
         const email =
             document
                 .getElementById("authEmail")
                 ?.value
-                .trim()
-                .toLowerCase();
+                ?.trim()
+                ?.toLowerCase() || "";
+
 
         const password =
             document
                 .getElementById("authPassword")
                 ?.value || "";
+
 
         const confirmPassword =
             document
@@ -181,44 +171,47 @@ function setupAuth() {
                 ?.value || "";
 
 
-        /* ---------- VALIDATION ---------- */
+        /* -----------------------------------------
+           BASIC VALIDATION
+        ----------------------------------------- */
 
-        if (!email || !password) {
+        if (!email) {
 
             showAuthMessage(
-                "Please enter email and password.",
+                "Please enter your email address.",
                 "error"
             );
 
             return;
+
         }
 
 
-        if (!isValidEmail(email)) {
+        if (!password) {
 
             showAuthMessage(
-                "Please enter a valid email address.",
+                "Please enter your password.",
                 "error"
             );
 
             return;
+
         }
 
-
-        if (password.length < 6) {
-
-            showAuthMessage(
-                "Password must contain at least 6 characters.",
-                "error"
-            );
-
-            return;
-        }
-
-
-        /* ---------- SIGNUP ---------- */
 
         if (isSignup) {
+
+            if (password.length < 6) {
+
+                showAuthMessage(
+                    "Password must contain at least 6 characters.",
+                    "error"
+                );
+
+                return;
+
+            }
+
 
             if (password !== confirmPassword) {
 
@@ -228,27 +221,78 @@ function setupAuth() {
                 );
 
                 return;
+
             }
 
-            await signupUser(email, password);
 
-            return;
+            await signupUser(
+                email,
+                password
+            );
+
+        } else {
+
+            await loginUser(
+                email,
+                password
+            );
+
         }
-
-
-        /* ---------- LOGIN ---------- */
-
-        await loginUser(email, password);
 
     });
 
 
-    /* ---------- LOGOUT ---------- */
+    /* ---------------------------------------------
+       LOGOUT
+    --------------------------------------------- */
 
-    logoutBtn?.addEventListener(
-        "click",
-        logoutUser
-    );
+    const logoutButton =
+        document.getElementById("logoutBtn");
+
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener(
+            "click",
+            logoutUser
+        );
+
+    }
+
+
+    /* ---------------------------------------------
+       INITIAL AUTH MODE
+    --------------------------------------------- */
+
+    if (signupTab.classList.contains("active")) {
+
+        if (confirmWrap) {
+            confirmWrap.classList.remove("hidden");
+        }
+
+        if (confirmInput) {
+            confirmInput.disabled = false;
+            confirmInput.required = true;
+        }
+
+        submitButton.textContent =
+            "Create Account";
+
+    } else {
+
+        if (confirmWrap) {
+            confirmWrap.classList.add("hidden");
+        }
+
+        if (confirmInput) {
+            confirmInput.disabled = true;
+            confirmInput.required = false;
+        }
+
+        submitButton.textContent =
+            "Login";
+
+    }
 
 }
 
@@ -260,22 +304,14 @@ function setupAuth() {
 async function signupUser(email, password) {
 
     setAuthLoading(true);
-
     clearAuthMessage();
 
-    try {
 
-        /*
-         * Use the current page URL as redirect.
-         * This works with GitHub Pages and normal hosting.
-         */
+    try {
 
         const redirectUrl =
             window.location.origin +
             window.location.pathname;
-
-
-        console.log("Creating account:", email);
 
 
         const {
@@ -289,17 +325,13 @@ async function signupUser(email, password) {
 
             options: {
 
-                emailRedirectTo: redirectUrl
+                emailRedirectTo:
+                    redirectUrl
 
             }
 
         });
 
-
-        console.log("Signup response:", data, error);
-
-
-        /* ---------- ERROR ---------- */
 
         if (error) {
 
@@ -309,82 +341,69 @@ async function signupUser(email, password) {
             );
 
             showAuthMessage(
-                getAuthErrorMessage(error),
+                getFriendlyAuthError(error),
                 "error"
             );
 
             return;
+
         }
 
 
-        /* ---------- SUCCESS ---------- */
+        /* -----------------------------------------
+           USER CREATED
+        ----------------------------------------- */
 
         if (data?.user) {
 
-            /*
-             * Supabase can return a user without a session
-             * when email confirmation is enabled.
-             */
-
-            if (data.session) {
-
-                currentUser =
-                    data.user;
-
-                showAuthMessage(
-                    "Account created successfully!",
-                    "success"
-                );
-
-                await showApp();
-
-            } else {
-
-                showAuthMessage(
-                    "Account created successfully. Please check your email and confirm your account before logging in.",
-                    "success"
-                );
-
-                /*
-                 * Keep user on authentication screen.
-                 */
-
-                const passwordInput =
-                    document.getElementById("authPassword");
-
-                const confirmInput =
-                    document.getElementById(
-                        "authConfirmPassword"
-                    );
-
-                if (passwordInput) {
-                    passwordInput.value = "";
-                }
-
-                if (confirmInput) {
-                    confirmInput.value = "";
-                }
-
-            }
-
-        } else {
-
-            showAuthMessage(
-                "Account creation completed, but no user was returned. Please try logging in.",
-                "error"
-            );
+            currentUser =
+                data.user;
 
         }
+
+
+        /* -----------------------------------------
+           EMAIL CONFIRMATION ENABLED
+        ----------------------------------------- */
+
+        if (!data?.session) {
+
+            showAuthMessage(
+                "Account created successfully! Please check your email and confirm your account before logging in.",
+                "success"
+            );
+
+            document
+                .getElementById("authForm")
+                ?.reset();
+
+            return;
+
+        }
+
+
+        /* -----------------------------------------
+           SESSION AVAILABLE
+        ----------------------------------------- */
+
+        showAuthMessage(
+            "Account created successfully.",
+            "success"
+        );
+
+
+        await showApp();
+
 
     } catch (error) {
 
         console.error(
-            "Unexpected signup error:",
+            "Signup exception:",
             error
         );
 
         showAuthMessage(
-            "Something went wrong while creating the account. Please try again.",
+            "Something went wrong while creating the account.",
             "error"
         );
 
@@ -404,8 +423,8 @@ async function signupUser(email, password) {
 async function loginUser(email, password) {
 
     setAuthLoading(true);
-
     clearAuthMessage();
+
 
     try {
 
@@ -429,22 +448,12 @@ async function loginUser(email, password) {
             );
 
             showAuthMessage(
-                getAuthErrorMessage(error),
+                getFriendlyAuthError(error),
                 "error"
             );
 
             return;
-        }
 
-
-        if (!data?.user) {
-
-            showAuthMessage(
-                "Login failed. Please try again.",
-                "error"
-            );
-
-            return;
         }
 
 
@@ -458,12 +467,12 @@ async function loginUser(email, password) {
     } catch (error) {
 
         console.error(
-            "Unexpected login error:",
+            "Login exception:",
             error
         );
 
         showAuthMessage(
-            "Unable to login. Please try again.",
+            "Something went wrong while logging in.",
             "error"
         );
 
@@ -477,79 +486,120 @@ async function loginUser(email, password) {
 
 
 /* =====================================================
+   FRIENDLY AUTH ERRORS
+===================================================== */
+
+function getFriendlyAuthError(error) {
+
+    const message =
+        error?.message || "";
+
+
+    const lower =
+        message.toLowerCase();
+
+
+    if (
+        lower.includes("user already registered")
+    ) {
+
+        return "This email is already registered. Please login instead.";
+
+    }
+
+
+    if (
+        lower.includes("invalid login credentials")
+    ) {
+
+        return "Incorrect email or password.";
+
+    }
+
+
+    if (
+        lower.includes("email not confirmed")
+    ) {
+
+        return "Please confirm your email address before logging in.";
+
+    }
+
+
+    if (
+        lower.includes("password should be at least")
+    ) {
+
+        return "Password must contain at least 6 characters.";
+
+    }
+
+
+    if (
+        lower.includes("rate limit")
+    ) {
+
+        return "Too many attempts. Please wait a little and try again.";
+
+    }
+
+
+    return message ||
+        "Authentication failed. Please try again.";
+
+}
+
+
+/* =====================================================
    LOGOUT
 ===================================================== */
 
 async function logoutUser() {
 
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient.auth.signOut();
+    const {
+        error
+    } = await supabaseClient.auth.signOut();
 
 
-        if (error) {
-
-            showToast(
-                error.message
-            );
-
-            return;
-        }
-
-
-        currentUser = null;
-
-        fields = [];
-        farmers = [];
-        observations = [];
-        diaryEntries = [];
-
-
-        const appShell =
-            document.getElementById("appShell");
-
-        const authScreen =
-            document.getElementById("authScreen");
-
-
-        if (appShell) {
-            appShell.style.display = "none";
-        }
-
-        if (authScreen) {
-            authScreen.style.display = "flex";
-        }
-
-
-        clearAuthMessage();
-
-
-        const authForm =
-            document.getElementById("authForm");
-
-        authForm?.reset();
-
+    if (error) {
 
         showToast(
-            "Logged out successfully."
+            error.message
         );
 
-
-    } catch (error) {
-
-        console.error(
-            "Logout error:",
-            error
-        );
-
-        showToast(
-            "Logout failed."
-        );
+        return;
 
     }
+
+
+    currentUser = null;
+
+    fields = [];
+    farmers = [];
+    observations = [];
+    diaryEntries = [];
+
+
+    const appShell =
+        document.getElementById("appShell");
+
+    const authScreen =
+        document.getElementById("authScreen");
+
+
+    if (appShell) {
+        appShell.style.display = "none";
+    }
+
+
+    if (authScreen) {
+        authScreen.style.display = "flex";
+    }
+
+
+    showToast(
+        "Logged out successfully."
+    );
 
 }
 
@@ -576,16 +626,10 @@ async function checkAuth() {
                 error
             );
 
-            showAuthMessage(
-                "Could not check your login session.",
-                "error"
-            );
-
-            return;
         }
 
 
-        if (data?.session?.user) {
+        if (data?.session) {
 
             currentUser =
                 data.session.user;
@@ -594,49 +638,36 @@ async function checkAuth() {
 
         } else {
 
-            showLoginScreen();
+            const authScreen =
+                document.getElementById("authScreen");
+
+            const appShell =
+                document.getElementById("appShell");
+
+
+            if (authScreen) {
+                authScreen.style.display = "flex";
+            }
+
+
+            if (appShell) {
+                appShell.style.display = "none";
+            }
 
         }
 
 
-        /*
-         * Listen for login/logout/email confirmation events.
-         */
-
         supabaseClient.auth.onAuthStateChange(
-            async (event, session) => {
+            async (_event, session) => {
 
-                console.log(
-                    "Auth event:",
-                    event
-                );
-
-
-                if (session?.user) {
+                if (session) {
 
                     currentUser =
                         session.user;
 
-                    /*
-                     * Do not unnecessarily reload
-                     * the application repeatedly.
-                     */
-
-                    if (
-                        document
-                            .getElementById("appShell")
-                            ?.style.display !== "flex"
-                    ) {
-
-                        await showApp();
-
-                    }
-
                 } else {
 
                     currentUser = null;
-
-                    showLoginScreen();
 
                 }
 
@@ -651,32 +682,6 @@ async function checkAuth() {
             error
         );
 
-        showLoginScreen();
-
-    }
-
-}
-
-
-/* =====================================================
-   SHOW LOGIN SCREEN
-===================================================== */
-
-function showLoginScreen() {
-
-    const authScreen =
-        document.getElementById("authScreen");
-
-    const appShell =
-        document.getElementById("appShell");
-
-
-    if (authScreen) {
-        authScreen.style.display = "flex";
-    }
-
-    if (appShell) {
-        appShell.style.display = "none";
     }
 
 }
@@ -688,15 +693,6 @@ function showLoginScreen() {
 
 async function showApp() {
 
-    if (!currentUser) {
-
-        showLoginScreen();
-
-        return;
-
-    }
-
-
     const authScreen =
         document.getElementById("authScreen");
 
@@ -707,6 +703,7 @@ async function showApp() {
     if (authScreen) {
         authScreen.style.display = "none";
     }
+
 
     if (appShell) {
         appShell.style.display = "flex";
@@ -720,7 +717,7 @@ async function showApp() {
     if (userEmail) {
 
         userEmail.textContent =
-            currentUser.email || "";
+            currentUser?.email || "";
 
     }
 
@@ -736,9 +733,7 @@ async function showApp() {
 
 async function loadAllData() {
 
-    if (!currentUser) {
-        return;
-    }
+    if (!currentUser) return;
 
 
     try {
@@ -755,7 +750,6 @@ async function loadAllData() {
 
         ] = await Promise.all([
 
-
             supabaseClient
                 .from("fields")
                 .select("*")
@@ -769,7 +763,6 @@ async function loadAllData() {
                         ascending: false
                     }
                 ),
-
 
             supabaseClient
                 .from("farmers")
@@ -785,7 +778,6 @@ async function loadAllData() {
                     }
                 ),
 
-
             supabaseClient
                 .from("crop_observations")
                 .select("*")
@@ -799,7 +791,6 @@ async function loadAllData() {
                         ascending: false
                     }
                 ),
-
 
             supabaseClient
                 .from("field_diary")
@@ -861,11 +852,14 @@ async function loadAllData() {
         fields =
             fieldsResponse.data || [];
 
+
         farmers =
             farmersResponse.data || [];
 
+
         observations =
             observationsResponse.data || [];
+
 
         diaryEntries =
             diaryResponse.data || [];
@@ -933,13 +927,19 @@ function setupNavigation() {
 }
 
 
+/* =====================================================
+   SHOW PAGE
+===================================================== */
+
 function showPage(page) {
 
     document
         .querySelectorAll(".page")
         .forEach(section => {
 
-            section.classList.remove("active");
+            section.classList.remove(
+                "active"
+            );
 
         });
 
@@ -950,7 +950,9 @@ function showPage(page) {
 
     if (target) {
 
-        target.classList.add("active");
+        target.classList.add(
+            "active"
+        );
 
     }
 
@@ -1052,13 +1054,15 @@ function setupForms() {
     const healthDate =
         document.getElementById("healthDate");
 
-    const diaryDate =
-        document.getElementById("diaryDate");
-
 
     if (healthDate) {
         healthDate.value = today();
     }
+
+
+    const diaryDate =
+        document.getElementById("diaryDate");
+
 
     if (diaryDate) {
         diaryDate.value = today();
@@ -1083,6 +1087,7 @@ async function saveField(event) {
         );
 
         return;
+
     }
 
 
@@ -1098,7 +1103,8 @@ async function saveField(event) {
             getValue("fieldVariety"),
 
         sowing_date:
-            getValue("fieldDate") || null,
+            getValue("fieldDate") ||
+            null,
 
         irrigation_source:
             getValue("fieldWater"),
@@ -1135,17 +1141,13 @@ async function saveField(event) {
 
     if (error) {
 
-        console.error(
-            "Save field:",
-            error
-        );
-
         showToast(
             "Could not save field: " +
             error.message
         );
 
         return;
+
     }
 
 
@@ -1178,6 +1180,7 @@ async function saveFarmer(event) {
         );
 
         return;
+
     }
 
 
@@ -1219,17 +1222,13 @@ async function saveFarmer(event) {
 
     if (error) {
 
-        console.error(
-            "Save farmer:",
-            error
-        );
-
         showToast(
             "Could not save farmer: " +
             error.message
         );
 
         return;
+
     }
 
 
@@ -1247,7 +1246,7 @@ async function saveFarmer(event) {
 
 
 /* =====================================================
-   SAVE HEALTH
+   SAVE HEALTH OBSERVATION
 ===================================================== */
 
 async function saveHealthObservation(event) {
@@ -1262,6 +1261,7 @@ async function saveHealthObservation(event) {
         );
 
         return;
+
     }
 
 
@@ -1305,17 +1305,13 @@ async function saveHealthObservation(event) {
 
     if (error) {
 
-        console.error(
-            "Save observation:",
-            error
-        );
-
         showToast(
             "Could not save observation: " +
             error.message
         );
 
         return;
+
     }
 
 
@@ -1326,6 +1322,7 @@ async function saveHealthObservation(event) {
 
     const healthDate =
         document.getElementById("healthDate");
+
 
     if (healthDate) {
         healthDate.value = today();
@@ -1357,6 +1354,7 @@ async function saveDiaryEntry(event) {
         );
 
         return;
+
     }
 
 
@@ -1393,17 +1391,13 @@ async function saveDiaryEntry(event) {
 
     if (error) {
 
-        console.error(
-            "Save diary:",
-            error
-        );
-
         showToast(
             "Could not save diary: " +
             error.message
         );
 
         return;
+
     }
 
 
@@ -1414,6 +1408,7 @@ async function saveDiaryEntry(event) {
 
     const diaryDate =
         document.getElementById("diaryDate");
+
 
     if (diaryDate) {
         diaryDate.value = today();
@@ -1436,7 +1431,9 @@ async function saveDiaryEntry(event) {
 function setupSearch() {
 
     const search =
-        document.getElementById("fieldSearch");
+        document.getElementById(
+            "fieldSearch"
+        );
 
 
     search?.addEventListener(
@@ -1473,7 +1470,9 @@ function renderAll() {
 function renderFields() {
 
     const tbody =
-        document.getElementById("fieldTable");
+        document.getElementById(
+            "fieldTable"
+        );
 
 
     if (!tbody) return;
@@ -1482,7 +1481,9 @@ function renderFields() {
     const search =
         (
             document
-                .getElementById("fieldSearch")
+                .getElementById(
+                    "fieldSearch"
+                )
                 ?.value || ""
         )
         .toLowerCase();
@@ -1494,15 +1495,13 @@ function renderFields() {
             const text = [
 
                 field.field_name,
-
                 field.crop,
-
                 field.variety
 
             ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
 
 
             return text.includes(search);
@@ -1521,6 +1520,7 @@ function renderFields() {
         `;
 
         return;
+
     }
 
 
@@ -1563,12 +1563,14 @@ function renderFields() {
                     </td>
 
                     <td>
+
                         <button
                             class="delete-btn"
                             onclick="deleteField('${field.id}')"
                         >
                             Delete
                         </button>
+
                     </td>
 
                 </tr>
@@ -1586,7 +1588,9 @@ function renderFields() {
 function renderFarmers() {
 
     const tbody =
-        document.getElementById("farmerTable");
+        document.getElementById(
+            "farmerTable"
+        );
 
 
     if (!tbody) return;
@@ -1603,6 +1607,7 @@ function renderFarmers() {
         `;
 
         return;
+
     }
 
 
@@ -1673,7 +1678,8 @@ function openFarmerProfile(id) {
     const farmer =
         farmers.find(
             item =>
-                String(item.id) === String(id)
+                String(item.id) ===
+                String(id)
         );
 
 
@@ -1681,7 +1687,9 @@ function openFarmerProfile(id) {
 
 
     const title =
-        document.getElementById("profileTitle");
+        document.getElementById(
+            "profileTitle"
+        );
 
 
     if (title) {
@@ -1709,33 +1717,28 @@ function openFarmerProfile(id) {
         "Not recorded";
 
 
-    const farmerCode =
-        String(
-            farmer.farmer_code || ""
-        )
-        .toLowerCase();
-
-
     const relatedHealth =
-        observations.filter(item => {
-
-            return String(
-                item.field_code || ""
-            )
-            .toLowerCase() === farmerCode;
-
-        });
+        observations.filter(
+            item =>
+                String(item.field_code || "")
+                    .toLowerCase() ===
+                String(
+                    farmer.farmer_code || ""
+                )
+                    .toLowerCase()
+        );
 
 
     const relatedDiary =
-        diaryEntries.filter(item => {
-
-            return String(
-                item.field_code || ""
-            )
-            .toLowerCase() === farmerCode;
-
-        });
+        diaryEntries.filter(
+            item =>
+                String(item.field_code || "")
+                    .toLowerCase() ===
+                String(
+                    farmer.farmer_code || ""
+                )
+                    .toLowerCase()
+        );
 
 
     const content =
@@ -1776,9 +1779,7 @@ function openFarmerProfile(id) {
 
             <div class="profile-item">
 
-                <small>
-                    Main Crop
-                </small>
+                <small>Main Crop</small>
 
                 <strong>
                     ${escapeHtml(
@@ -1791,9 +1792,7 @@ function openFarmerProfile(id) {
 
             <div class="profile-item">
 
-                <small>
-                    Seed Source
-                </small>
+                <small>Seed Source</small>
 
                 <strong>
                     ${escapeHtml(
@@ -1806,9 +1805,7 @@ function openFarmerProfile(id) {
 
             <div class="profile-item">
 
-                <small>
-                    Irrigation
-                </small>
+                <small>Irrigation</small>
 
                 <strong>
                     ${escapeHtml(
@@ -1821,9 +1818,7 @@ function openFarmerProfile(id) {
 
             <div class="profile-item">
 
-                <small>
-                    Health Records
-                </small>
+                <small>Health Records</small>
 
                 <strong>
                     ${relatedHealth.length}
@@ -1836,9 +1831,7 @@ function openFarmerProfile(id) {
 
         <div class="profile-item">
 
-            <small>
-                Major Farming Problem
-            </small>
+            <small>Major Farming Problem</small>
 
             <strong>
                 ${escapeHtml(problem)}
@@ -1852,9 +1845,7 @@ function openFarmerProfile(id) {
 
         <div class="profile-item">
 
-            <small>
-                Farmer's Observation
-            </small>
+            <small>Farmer's Observation</small>
 
             <strong>
                 ${escapeHtml(observation)}
@@ -1868,9 +1859,7 @@ function openFarmerProfile(id) {
 
         <div class="profile-item">
 
-            <small>
-                Linked Diary Entries
-            </small>
+            <small>Linked Diary Entries</small>
 
             <strong>
                 ${relatedDiary.length}
@@ -1914,6 +1903,7 @@ function renderHealth() {
         `;
 
         return;
+
     }
 
 
@@ -2002,6 +1992,7 @@ function renderDiary() {
         `;
 
         return;
+
     }
 
 
@@ -2030,6 +2021,7 @@ function renderDiary() {
                         )}
                     </p>
 
+
                     ${
                         entry.weather_condition
                         ?
@@ -2049,6 +2041,7 @@ function renderDiary() {
                         :
                         ""
                     }
+
 
                     <button
                         class="delete-btn"
@@ -2126,6 +2119,7 @@ function animateNumber(id, target) {
             target;
 
         return;
+
     }
 
 
@@ -2199,6 +2193,7 @@ function renderCropDistribution() {
         `;
 
         return;
+
     }
 
 
@@ -2213,7 +2208,8 @@ function renderCropDistribution() {
 
 
         counts[crop] =
-            (counts[crop] || 0) + 1;
+            (counts[crop] || 0) +
+            1;
 
     });
 
@@ -2318,26 +2314,6 @@ function renderRecentActivity() {
         });
 
 
-    farmers
-        .slice(0, 5)
-        .forEach(item => {
-
-            activities.push({
-
-                date:
-                    item.created_at,
-
-                text:
-                    `Farmer added: ${
-                        item.farmer_code ||
-                        "Unknown"
-                    }`
-
-            });
-
-        });
-
-
     observations
         .slice(0, 5)
         .forEach(item => {
@@ -2394,6 +2370,7 @@ function renderRecentActivity() {
         `;
 
         return;
+
     }
 
 
@@ -2404,7 +2381,8 @@ function renderRecentActivity() {
 
                 <div class="activity-item">
 
-                    <span class="activity-dot"></span>
+                    <span class="activity-dot">
+                    </span>
 
                     <div>
 
@@ -2463,10 +2441,12 @@ async function deleteField(id) {
         );
 
         return;
+
     }
 
 
     await loadAllData();
+
 
     showToast(
         "Field deleted."
@@ -2508,10 +2488,12 @@ async function deleteFarmer(id) {
         );
 
         return;
+
     }
 
 
     await loadAllData();
+
 
     showToast(
         "Farmer deleted."
@@ -2553,10 +2535,12 @@ async function deleteObservation(id) {
         );
 
         return;
+
     }
 
 
     await loadAllData();
+
 
     showToast(
         "Health observation deleted."
@@ -2598,10 +2582,12 @@ async function deleteDiary(id) {
         );
 
         return;
+
     }
 
 
     await loadAllData();
+
 
     showToast(
         "Diary entry deleted."
@@ -2631,13 +2617,9 @@ async function deleteAllData() {
     const tables = [
 
         "crop_observations",
-
         "field_diary",
-
         "research_samples",
-
         "fields",
-
         "farmers"
 
     ];
@@ -2665,13 +2647,9 @@ async function deleteAllData() {
             );
 
 
-            /*
-             * research_samples may not exist
-             * in the current database.
-             */
-
             if (
-                table === "research_samples"
+                table ===
+                "research_samples"
             ) {
 
                 continue;
@@ -2680,10 +2658,11 @@ async function deleteAllData() {
 
 
             showToast(
-                `Could not clear ${table}: ${error.message}`
+                `Could not clear ${table}.`
             );
 
             return;
+
         }
 
     }
@@ -2712,6 +2691,7 @@ async function exportBackup() {
         );
 
         return;
+
     }
 
 
@@ -2721,7 +2701,7 @@ async function exportBackup() {
             "NayaKhap Agro Research",
 
         version:
-            "3.0",
+            "2.0",
 
         exported_at:
             new Date().toISOString(),
@@ -2773,7 +2753,9 @@ async function exportBackup() {
 
     document.body.appendChild(a);
 
+
     a.click();
+
 
     a.remove();
 
@@ -2795,7 +2777,7 @@ async function exportBackup() {
 async function restoreBackup(event) {
 
     const file =
-        event.target.files?.[0];
+        event.target.files[0];
 
 
     if (!file) return;
@@ -2824,16 +2806,16 @@ async function restoreBackup(event) {
 
 
         alert(
-            "Backup file is valid.\n\nAutomatic cloud restore is disabled for safety. Your current cloud data has NOT been changed."
+            "Backup file is valid.\n\nAutomatic cloud restore is disabled in this version for safety. Your current cloud data has NOT been changed."
         );
 
 
     } catch (error) {
 
         console.error(
-            "Restore error:",
             error
         );
+
 
         showToast(
             "Invalid backup file."
@@ -2860,7 +2842,9 @@ function openModal(id) {
     if (!modal) return;
 
 
-    modal.classList.add("open");
+    modal.classList.add(
+        "open"
+    );
 
 }
 
@@ -2874,10 +2858,16 @@ function closeModal(id) {
     if (!modal) return;
 
 
-    modal.classList.remove("open");
+    modal.classList.remove(
+        "open"
+    );
 
 }
 
+
+/* =====================================================
+   MODAL BEHAVIOR
+===================================================== */
 
 function setupModalBehavior() {
 
@@ -2890,7 +2880,8 @@ function setupModalBehavior() {
                 event => {
 
                     if (
-                        event.target === modal
+                        event.target ===
+                        modal
                     ) {
 
                         modal.classList.remove(
@@ -2910,7 +2901,8 @@ function setupModalBehavior() {
         event => {
 
             if (
-                event.key === "Escape"
+                event.key ===
+                "Escape"
             ) {
 
                 document
@@ -2982,6 +2974,10 @@ function parseNumber(value) {
 }
 
 
+/* =====================================================
+   FORMAT DATE
+===================================================== */
+
 function formatDate(value) {
 
     if (!value) return "-";
@@ -3013,6 +3009,10 @@ function formatDate(value) {
 
 }
 
+
+/* =====================================================
+   FORMAT DATE + TIME
+===================================================== */
 
 function formatDateTime(value) {
 
@@ -3047,6 +3047,10 @@ function formatDateTime(value) {
 
 }
 
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
 
 function escapeHtml(value) {
 
@@ -3091,108 +3095,7 @@ function escapeHtml(value) {
 
 
 /* =====================================================
-   EMAIL VALIDATION
-===================================================== */
-
-function isValidEmail(email) {
-
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        .test(email);
-
-}
-
-
-/* =====================================================
-   AUTH ERROR HANDLING
-===================================================== */
-
-function getAuthErrorMessage(error) {
-
-    if (!error) {
-
-        return "Something went wrong.";
-
-    }
-
-
-    const message =
-        String(
-            error.message || ""
-        );
-
-
-    const lower =
-        message.toLowerCase();
-
-
-    if (
-        lower.includes("user already registered")
-    ) {
-
-        return "This email is already registered. Please login instead.";
-
-    }
-
-
-    if (
-        lower.includes("email not confirmed")
-    ) {
-
-        return "Please confirm your email address first, then login.";
-
-    }
-
-
-    if (
-        lower.includes("invalid login credentials")
-    ) {
-
-        return "Incorrect email or password.";
-
-    }
-
-
-    if (
-        lower.includes("password")
-        &&
-        lower.includes("6")
-    ) {
-
-        return "Password must contain at least 6 characters.";
-
-    }
-
-
-    if (
-        lower.includes("rate limit")
-        ||
-        lower.includes("too many requests")
-    ) {
-
-        return "Too many attempts. Please wait a few minutes and try again.";
-
-    }
-
-
-    if (
-        lower.includes("email")
-        &&
-        lower.includes("disabled")
-    ) {
-
-        return "Email signup is currently disabled in Supabase.";
-
-    }
-
-
-    return message ||
-        "Authentication failed. Please try again.";
-
-}
-
-
-/* =====================================================
-   AUTH UI
+   AUTH LOADING
 ===================================================== */
 
 function setAuthLoading(loading) {
@@ -3220,7 +3123,9 @@ function setAuthLoading(loading) {
 
         const signup =
             document
-                .getElementById("signupTab")
+                .getElementById(
+                    "signupTab"
+                )
                 ?.classList
                 .contains("active");
 
@@ -3235,6 +3140,10 @@ function setAuthLoading(loading) {
 }
 
 
+/* =====================================================
+   AUTH MESSAGE
+===================================================== */
+
 function showAuthMessage(
     message,
     type = ""
@@ -3246,15 +3155,7 @@ function showAuthMessage(
         );
 
 
-    if (!box) {
-
-        console.log(
-            "Auth message:",
-            message
-        );
-
-        return;
-    }
+    if (!box) return;
 
 
     box.textContent =
@@ -3299,11 +3200,6 @@ function showToast(message) {
             "toast"
         );
 
-
-    /*
-     * If toast element does not exist in index.html,
-     * show a browser alert instead of silently doing nothing.
-     */
 
     if (!toast) {
 
